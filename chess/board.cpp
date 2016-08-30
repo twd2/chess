@@ -1,4 +1,5 @@
 #include "board.h"
+#include "engine.h"
 
 #include <QPainter>
 
@@ -55,6 +56,11 @@ void Board::paintEvent(QPaintEvent *e)
             }
             else
             {
+                if (Engine::isDangerous(chess, row, col, "W"))
+                {
+                    QPixmap pix(":/image/boom.png");
+                    p.drawPixmap(rect, pix.scaled(rect.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+                }
                 // do nothing
             }
         }

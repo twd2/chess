@@ -15,12 +15,17 @@ TEMPLATE = app
 SOURCES += main.cpp\
         widget.cpp \
     setendpoint.cpp \
-    board.cpp
+    board.cpp \
+    engine.cpp
 
 HEADERS  += widget.h \
     setendpoint.h \
     board.h \
-    utils.h
+    utils.h \
+    engine.h
 
 FORMS    += widget.ui \
     setendpoint.ui
+
+RESOURCES += \
+    res.qrc
