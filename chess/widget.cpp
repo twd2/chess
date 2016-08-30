@@ -5,7 +5,7 @@
 
 #include <QMessageBox>
 #include <QJsonObject>
-#include <QHostInfo>
+#include <QNetworkInterface>
 
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
@@ -156,11 +156,12 @@ void Widget::on_btnListen_clicked()
     }
 
     ui->labAddress->setText(tr("Address: ?"));
-    QHostInfo info;
     if (se.address == QHostAddress::Any)
     {
-        for (auto &addr : info.addresses())
+        ui->labAddress->setText(tr("Address: [::1]"));
+        for (auto &addr : QNetworkInterface::allAddresses())
         {
+            qDebug() << addr;
             if (!addr.isLoopback())
             {
                 ui->labAddress->setText(tr("Address: %1").arg(addr.toString()));
@@ -170,8 +171,10 @@ void Widget::on_btnListen_clicked()
     }
     else if (se.address == QHostAddress::AnyIPv6)
     {
-        for (auto &addr : info.addresses())
+        ui->labAddress->setText(tr("Address: [::1]"));
+        for (auto &addr : QNetworkInterface::allAddresses())
         {
+            qDebug() << addr;
             if (!addr.isLoopback() && addr.protocol() == QAbstractSocket::IPv6Protocol)
             {
                 ui->labAddress->setText(tr("Address: %1").arg(addr.toString()));
@@ -181,8 +184,10 @@ void Widget::on_btnListen_clicked()
     }
     else if (se.address == QHostAddress::AnyIPv4)
     {
-        for (auto &addr : info.addresses())
+        ui->labAddress->setText(tr("Address: 127.0.0.1"));
+        for (auto &addr : QNetworkInterface::allAddresses())
         {
+            qDebug() << addr;
             if (!addr.isLoopback() && addr.protocol() == QAbstractSocket::IPv4Protocol)
             {
                 ui->labAddress->setText(tr("Address: %1").arg(addr.toString()));

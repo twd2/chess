@@ -262,7 +262,7 @@ bool Engine::findDangerous2(const QVector<QVector<char> > &vec, char enemy)
         return false;
     }
     find = false;
-    // one single-naked 4
+    // ...and...one single-naked 4
     for (int row = 0; row < vec.count(); ++row)
     {
         auto &rowVec = vec[row];
