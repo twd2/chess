@@ -38,11 +38,6 @@ void Board::paintEvent(QPaintEvent *e)
         const auto &colArray = chess[row];
         for (int col = 0; col < colCount; ++col)
         {
-//            if (row != 0 && row % 3 == 0 && col != 0 && col % 3 == 0)
-//            {
-//                p.setBrush(Qt::black);
-//                p.drawEllipse(col * doubleRadius + bigBoarder, row * doubleRadius + bigBoarder, doubleRadius - bigBoarder * 2, doubleRadius - bigBoarder * 2);
-//            }
             char ch = colArray[col];
             QRect rect(col * doubleRadius + boarder, row * doubleRadius + boarder, doubleRadius - boarder * 2, doubleRadius - boarder * 2);
             if (ch == 'W')
@@ -64,6 +59,11 @@ void Board::paintEvent(QPaintEvent *e)
                 }
                 // do nothing
             }
+            if (row == lastRow && col == lastCol)
+            {
+                p.fillRect(col * doubleRadius + bigBoarder, row * doubleRadius + bigBoarder, doubleRadius - bigBoarder * 2, doubleRadius - bigBoarder * 2,
+                           Qt::red);
+            }
         }
     }
 
@@ -74,7 +74,7 @@ void Board::paintEvent(QPaintEvent *e)
         f.setPointSize(doubleRadius);
         p.setFont(f);
         p.setPen(Qt::red);
-        p.drawText(QRect(0, 0, boardSize, boardSize), Qt::AlignCenter, tr("Waiting..."));
+        p.drawText(QRect(0, 0, boardSize, boardSize), Qt::AlignCenter, lockText);
         p.fillRect(0, 0, boardSize, boardSize, QColor::fromRgb(0, 0, 0, 100));
     }
 }
@@ -108,7 +108,8 @@ void Board::mousePressEvent(QMouseEvent *e)
                 newArray[col] = e->button() == Qt::LeftButton ? 'W' : 'B';
                 chess[row] = newArray;
                 emit clicked(row, col);
-                qDebug () << Engine::findWin(chess);
+                setLast(row, col); // test
+                qDebug () << "win=" << Engine::findWin(chess);
                 update();
                 return;
             }
@@ -121,19 +122,28 @@ QVector<QVector<char> > Board::getChess() const
     return chess;
 }
 
-void Board::setLock(bool lock)
+void Board::setLock(bool lock, const QString &lockText)
 {
     this->lock = lock;
+    this->lockText = lockText;
     update();
 }
 
 void Board::setBoard(const QVector<QVector<char> > &chess)
 {
     this->chess = chess;
+    setLast(-1, -1);
     update();
 }
 
 bool Board::getLock() const
 {
     return lock;
+}
+
+void Board::setLast(int row, int col)
+{
+    lastRow = row;
+    lastCol = col;
+    update();
 }

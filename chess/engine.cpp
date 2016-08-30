@@ -7,6 +7,21 @@ Engine::Engine()
 
 }
 
+QVector<QVector<char> > Engine::generate(int row, int col)
+{
+    QVector<QVector<char> > array;
+    for (int i = 0; i < row; ++i)
+    {
+        QVector<char> row;
+        for (int j = 0; j < col; ++j)
+        {
+            row.append(' ');
+        }
+        array.append(row);
+    }
+    return array;
+}
+
 char Engine::findWin(const QVector<QVector<char> > &vec)
 {
     for (int row = 0; row < vec.count(); ++row)
@@ -66,7 +81,7 @@ bool Engine::isDangerous(QVector<QVector<char> > vec, int row, int col, char ene
     return findWin(vec) == enemy || findDangerous1(vec, enemy) || findDangerous2(vec, enemy) || findDangerous3(vec, enemy);
 }
 
-QVector<QVector<char> > Engine::toVector(const QJsonArray &board)
+QVector<QVector<char> > Engine::fromJson(const QJsonArray &board)
 {
     QVector<QVector<char> > vec;
     for (int row = 0; row < board.count(); ++row)
@@ -377,4 +392,20 @@ bool Engine::isBlock(const QVector<QVector<char> > &vec, int row, int col)
         return true;
     }
     return vec[row][col] != ' ';
+}
+
+QJsonArray Engine::toJson(const QVector<QVector<char> > &vec)
+{
+    QJsonArray array;
+    for (int row = 0; row < vec.count(); ++row)
+    {
+        auto &rowVec = vec[row];
+        QJsonArray rowArray;
+        for (int col = 0; col < rowVec.count(); ++col)
+        {
+            rowArray.append(QString(rowVec[col]));
+        }
+        array.append(rowArray);
+    }
+    return array;
 }

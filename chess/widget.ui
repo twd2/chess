@@ -33,14 +33,14 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="QPushButton" name="pushButton_5">
+         <widget class="QPushButton" name="btnTestBoard">
           <property name="text">
            <string>Test</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_6">
+         <widget class="QPushButton" name="btnTestLock">
           <property name="text">
            <string>Lock</string>
           </property>
@@ -56,14 +56,14 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QPushButton" name="pushButton">
+         <widget class="QPushButton" name="btnConnect">
           <property name="text">
            <string>Connect</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_2">
+         <widget class="QPushButton" name="btnClientStop">
           <property name="text">
            <string>Stop</string>
           </property>
@@ -79,14 +79,14 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QPushButton" name="pushButton_3">
+         <widget class="QPushButton" name="btnListen">
           <property name="text">
            <string>Listen</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_4">
+         <widget class="QPushButton" name="btnServerStop">
           <property name="text">
            <string>Stop</string>
           </property>

@@ -16,13 +16,17 @@ SOURCES += main.cpp\
         widget.cpp \
     setendpoint.cpp \
     board.cpp \
-    engine.cpp
+    engine.cpp \
+    jsonsession.cpp \
+    chessserver.cpp
 
 HEADERS  += widget.h \
     setendpoint.h \
     board.h \
     utils.h \
-    engine.h
+    engine.h \
+    jsonsession.h \
+    chessserver.h
 
 FORMS    += widget.ui \
     setendpoint.ui

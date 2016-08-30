@@ -3,10 +3,15 @@
 
 #include "utils.h"
 
+#include <memory>
+
 #include <QWidget>
 #include <QJsonArray>
 #include <QPaintEvent>
 #include <QMouseEvent>
+#include <QTcpServer>
+#include <QTcpSocket>
+#include <QJsonObject>
 
 class Board : public QWidget
 {
@@ -14,6 +19,8 @@ class Board : public QWidget
 protected:
     QVector<QVector<char> > chess;
     bool lock = false;
+    QString lockText = "";
+    int lastRow = -1, lastCol = -1;
 public:
     explicit Board(QWidget *parent = 0);
     void paintEvent(QPaintEvent *) override;
@@ -24,7 +31,8 @@ signals:
     void clicked(int row, int col);
 public slots:
     void setBoard(const QVector<QVector<char> > &);
-    void setLock(bool);
+    void setLock(bool, const QString &lockText = "");
+    void setLast(int row, int col);
 };
 
 #endif // BOARD_H

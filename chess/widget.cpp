@@ -15,7 +15,7 @@ Widget::~Widget()
     delete ui;
 }
 
-void Widget::on_pushButton_5_clicked()
+void Widget::on_btnTestBoard_clicked()
 {
     QVector<QVector<char> > array;
     for (int i = 0; i < 15; ++i)
@@ -30,7 +30,7 @@ void Widget::on_pushButton_5_clicked()
     ui->widget->setBoard(array);
 }
 
-void Widget::on_pushButton_6_clicked()
+void Widget::on_btnTestLock_clicked()
 {
-    ui->widget->setLock(!ui->widget->getLock());
+    ui->widget->setLock(!ui->widget->getLock(), "Hello");
 }
