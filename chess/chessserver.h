@@ -11,7 +11,7 @@
 #include <QJsonObject>
 
 class ChessServer
-    : QObject
+    : public QObject
 {
     Q_OBJECT
 public:

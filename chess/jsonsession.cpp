@@ -11,11 +11,7 @@ JsonSession::JsonSession(QTcpSocket *sock, QObject *parent)
     updateActive();
     connect(sock, SIGNAL(readyRead()), this, SLOT(read()));
     connect(sock, SIGNAL(disconnected()), this, SLOT(disconnected()));
-    connect(this, SIGNAL(onMessage(QJsonObject)), this, SLOT(send(QJsonObject)));
-    QJsonObject obj;
-    obj["type"] = "hello";
-    obj["data"] = "hello";
-    send(obj);
+    // echo test: connect(this, SIGNAL(onMessage(QJsonObject)), this, SLOT(send(QJsonObject)));
 }
 
 inline quint32 min(const quint32 &a, const quint32 &b)
@@ -65,7 +61,7 @@ void JsonSession::read()
                 current_pos = 0;
                 header->length = qFromBigEndian(header->length);
                 qDebug() << header->magic[0] << header->magic[1] << header->magic[2] << header->magic[3] << header->length;
-                if (strncpy(header->magic, MAGIC_HEADER, 4) != 0
+                if (!(header->magic[0] == MAGIC_HEADER[0] && header->magic[1] == MAGIC_HEADER[1] && header->magic[2] == MAGIC_HEADER[2] && header->magic[3] == MAGIC_HEADER[3])
                     || header->length == 0 || header->length > maxLength)
                 {
                     qDebug() << "protocol mismatch";
@@ -168,5 +164,12 @@ JsonSession::~JsonSession()
     {
         delete header;
         header = nullptr;
+    }
+
+    if (sock)
+    {
+        close();
+        delete sock;
+        sock = nullptr;
     }
 }

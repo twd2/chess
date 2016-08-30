@@ -1,9 +1,13 @@
 #ifndef WIDGET_H
 #define WIDGET_H
 
+#include "chessserver.h"
+#include "jsonsession.h"
+
 #include <memory>
 
 #include <QWidget>
+#include <QJsonObject>
 #include <QTcpServer>
 #include <QTcpSocket>
 
@@ -21,13 +25,26 @@ public:
 
 private slots:
     void on_btnTestBoard_clicked();
-
     void on_btnTestLock_clicked();
+    void boardClicked(int row, int col);
+    void onMessage(QJsonObject);
+
+    void on_btnClientStop_clicked();
+
+    void on_btnServerStop_clicked();
+
+    void on_btnListen_clicked();
+
+    void on_btnConnect_clicked();
 
 private:
     Ui::Widget *ui;
-    std::shared_ptr<QTcpServer> server = nullptr;
-    std::shared_ptr<QTcpSocket> client = nullptr;
+    std::shared_ptr<ChessServer> server = nullptr;
+    std::shared_ptr<JsonSession> client = nullptr;
+    char myColor = ' ';
+
+    void sendToServer(const QJsonObject &);
+    void reset();
 };
 
 #endif // WIDGET_H

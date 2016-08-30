@@ -27,6 +27,8 @@ void Board::paintEvent(QPaintEvent *e)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
     p.fillRect(0, 0, boardSize, boardSize, Qt::darkYellow);
+    QPixmap boardImg(":/image/board.jpg");
+    p.drawPixmap(0, 0, boardSize, boardSize, boardImg.scaled(boardSize, boardSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
     for (int row = 0; row < rowCount; ++row)
     {
         p.drawLine(radius, row * doubleRadius + radius, boardSize - radius, row * doubleRadius + radius); // -
@@ -52,7 +54,7 @@ void Board::paintEvent(QPaintEvent *e)
             }
             else
             {
-                if (Engine::isDangerous(chess, row, col, 'W'))
+                if (Engine::isDangerous(chess, row, col, Engine::otherColor(color)))
                 {
                     QPixmap pix(":/image/boom.png");
                     p.drawPixmap(rect, pix.scaled(rect.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
@@ -85,6 +87,10 @@ void Board::mousePressEvent(QMouseEvent *e)
     {
         return;
     }
+    if (chess.count() == 0 || chess[0].count() == 0)
+    {
+        return;
+    }
     int boardSize = min(width(), height());
     int rowCount = chess.count(),
         colCount = chess[0].count();
@@ -96,19 +102,17 @@ void Board::mousePressEvent(QMouseEvent *e)
 
     for (int row = 0; row < rowCount; ++row)
     {
-        const auto &colArray = chess[row];
+        auto &rowArray = chess[row];
         for (int col = 0; col < colCount; ++col)
         {
-            char ch = colArray[col];
+            char ch = rowArray[col];
             QRect rect(col * doubleRadius + boarder, row * doubleRadius + boarder, doubleRadius - boarder * 2, doubleRadius - boarder * 2);
             if (rect.contains(e->pos()) && ch == ' ')
             {
                 // local render
-                auto newArray = colArray;
-                newArray[col] = e->button() == Qt::LeftButton ? 'W' : 'B';
-                chess[row] = newArray;
+                rowArray[col] = color;
                 emit clicked(row, col);
-                setLast(row, col); // test
+                // setLast(row, col); // test
                 qDebug () << "win=" << Engine::findWin(chess);
                 update();
                 return;

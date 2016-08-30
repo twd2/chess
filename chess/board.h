@@ -22,6 +22,7 @@ protected:
     QString lockText = "";
     int lastRow = -1, lastCol = -1;
 public:
+    char color = 'W';
     explicit Board(QWidget *parent = 0);
     void paintEvent(QPaintEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
@@ -33,6 +34,8 @@ public slots:
     void setBoard(const QVector<QVector<char> > &);
     void setLock(bool, const QString &lockText = "");
     void setLast(int row, int col);
+
+
 };
 
 #endif // BOARD_H

@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/image">
         <file>boom.png</file>
+        <file>board.jpg</file>
     </qresource>
 </RCC>

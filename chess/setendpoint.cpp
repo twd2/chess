@@ -62,3 +62,13 @@ void SetEndpoint::numClicked(int n)
         ui->lineEdit->setText(ui->lineEdit->text() + ".");
     }
 }
+
+void SetEndpoint::setAddress(QHostAddress addr)
+{
+    ui->lineEdit->setText(addr.toString());
+}
+
+void SetEndpoint::setPort(quint16 port)
+{
+    ui->lineEdit_2->setText(QString::number(port));
+}

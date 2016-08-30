@@ -15,7 +15,7 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_2">
    <item>
-    <widget class="Board" name="widget" native="true">
+    <widget class="Board" name="board" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
@@ -50,7 +50,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QGroupBox" name="groupBox_2">
+      <widget class="QGroupBox" name="gClient">
        <property name="title">
         <string>As Client</string>
        </property>
@@ -73,11 +73,25 @@
       </widget>
      </item>
      <item>
-      <widget class="QGroupBox" name="groupBox">
+      <widget class="QGroupBox" name="gServer">
        <property name="title">
         <string>As Host</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QLabel" name="labAddress">
+          <property name="text">
+           <string>Address: ?</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="labPort">
+          <property name="text">
+           <string>Port: ?</string>
+          </property>
+         </widget>
+        </item>
         <item>
          <widget class="QPushButton" name="btnListen">
           <property name="text">

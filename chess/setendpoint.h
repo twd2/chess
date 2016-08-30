@@ -19,6 +19,8 @@ public:
     QHostAddress address;
     quint16 port;
 
+    void setAddress(QHostAddress);
+    void setPort(quint16);
 private slots:
     void on_buttonBox_rejected();
     void on_buttonBox_accepted();

@@ -54,7 +54,7 @@ void ChessServer::command(const QJsonObject &obj)
 
 void ChessServer::onMessage(char who, const QJsonObject &obj)
 {
-    qDebug() << "on message" << obj;
+    qDebug() << "server on message" << obj;
     QString type = obj["type"].toString();
     if (type == "hello")
     {
@@ -78,7 +78,7 @@ void ChessServer::onMessage(char who, const QJsonObject &obj)
 
         // next turn
         turn = Engine::otherColor(turn);
-        sendBoardBoth();
+        sendBoardBoth(row, col);
 
         // check win
         char win = Engine::findWin(board);
@@ -110,11 +110,12 @@ void ChessServer::sendBoardBoth(int lastRow, int lastCol)
 {
     QJsonObject obj;
     obj["type"] = "update";
-    QJsonObject dataObj;
-    dataObj["row"] = lastRow;
-    dataObj["col"] = lastCol;
-    dataObj["turn"] = QString(turn);
-    dataObj["board"] = Engine::toJson(board);
+    QJsonObject data;
+    data["row"] = lastRow;
+    data["col"] = lastCol;
+    data["turn"] = QString(turn);
+    data["board"] = Engine::toJson(board);
+    obj["data"] = data;
     sendBoth(obj);
 }
 
@@ -130,10 +131,10 @@ void ChessServer::sendColors()
 {
     QJsonObject obj;
     obj["type"] = "color";
-    obj["data"] = myColor;
+    obj["data"] = QString(myColor);
     emit message(obj);
 
-    obj["data"] = Engine::otherColor(myColor);
+    obj["data"] = QString(Engine::otherColor(myColor));
     js->send(obj);
 }
 
