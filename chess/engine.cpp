@@ -274,7 +274,7 @@ bool Engine::findDangerous2(const QVector<QVector<char> > &vec, char enemy)
                 continue;
             }
             // right
-            if (col + 2 < rowVec.count())
+            if (col + 3 < rowVec.count())
             {
                 if (rowVec[col + 1] == ch && rowVec[col + 2] == ch && rowVec[col + 3] == ch
                     && (!isBlock(vec, row, col - 1) || !isBlock(vec, row, col + 4)))
@@ -284,7 +284,7 @@ bool Engine::findDangerous2(const QVector<QVector<char> > &vec, char enemy)
                 }
             }
             // down
-            if (row + 2 < vec.count())
+            if (row + 3 < vec.count())
             {
                 if (vec[row + 1][col] == ch && vec[row + 2][col] == ch && vec[row + 3][col] == ch
                     && (!isBlock(vec, row - 1, col) || !isBlock(vec, row + 4, col)))
@@ -294,7 +294,7 @@ bool Engine::findDangerous2(const QVector<QVector<char> > &vec, char enemy)
                 }
             }
             // right down
-            if (row + 2 < vec.count() && col + 2 < rowVec.count())
+            if (row + 3 < vec.count() && col + 3 < rowVec.count())
             {
                 if (vec[row + 1][col + 1] == ch && vec[row + 2][col + 2] == ch && vec[row + 3][col + 3] == ch
                     && (!isBlock(vec, row - 1, col - 1) || !isBlock(vec, row + 4, col + 4)))
@@ -304,7 +304,7 @@ bool Engine::findDangerous2(const QVector<QVector<char> > &vec, char enemy)
                 }
             }
             // left down
-            if (row + 2 < vec.count() && col >= 2)
+            if (row + 3 < vec.count() && col >= 3)
             {
                 if (vec[row + 1][col - 1] == ch && vec[row + 2][col - 2] == ch && vec[row + 3][col - 3] == ch
                     && (!isBlock(vec, row - 1, col + 1) || !isBlock(vec, row + 4, col - 4)))
@@ -337,7 +337,7 @@ bool Engine::findDangerous3(const QVector<QVector<char> > &vec, char enemy)
                 continue;
             }
             // right
-            if (col + 2 < rowVec.count())
+            if (col + 3 < rowVec.count())
             {
                 if (rowVec[col + 1] == ch && rowVec[col + 2] == ch && rowVec[col + 3] == ch
                     && (!isBlock(vec, row, col - 1) && !isBlock(vec, row, col + 4)))
@@ -347,7 +347,7 @@ bool Engine::findDangerous3(const QVector<QVector<char> > &vec, char enemy)
                 }
             }
             // down
-            if (row + 2 < vec.count())
+            if (row + 3 < vec.count())
             {
                 if (vec[row + 1][col] == ch && vec[row + 2][col] == ch && vec[row + 3][col] == ch
                     && (!isBlock(vec, row - 1, col) && !isBlock(vec, row + 4, col)))
@@ -357,7 +357,7 @@ bool Engine::findDangerous3(const QVector<QVector<char> > &vec, char enemy)
                 }
             }
             // right down
-            if (row + 2 < vec.count() && col + 2 < rowVec.count())
+            if (row + 3 < vec.count() && col + 3 < rowVec.count())
             {
                 if (vec[row + 1][col + 1] == ch && vec[row + 2][col + 2] == ch && vec[row + 3][col + 3] == ch
                     && (!isBlock(vec, row - 1, col - 1) && !isBlock(vec, row + 4, col + 4)))
@@ -367,7 +367,7 @@ bool Engine::findDangerous3(const QVector<QVector<char> > &vec, char enemy)
                 }
             }
             // left down
-            if (row + 2 < vec.count() && col >= 2)
+            if (row + 3 < vec.count() && col >= 3)
             {
                 if (vec[row + 1][col - 1] == ch && vec[row + 2][col - 2] == ch && vec[row + 3][col - 3] == ch
                     && (!isBlock(vec, row - 1, col + 1) && !isBlock(vec, row + 4, col - 4)))

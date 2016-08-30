@@ -5,6 +5,7 @@
 
 #include <QMessageBox>
 #include <QJsonObject>
+#include <QHostInfo>
 
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
@@ -91,6 +92,11 @@ void Widget::onMessage(QJsonObject obj)
             ui->board->setLock(true, tr("You lost :("));
         }
     }
+    else if (type == "close")
+    {
+        QMessageBox::warning(this, tr("Warning"), tr("Disconnected."));
+        reset();
+    }
 }
 
 void Widget::sendToServer(const QJsonObject &obj)
@@ -108,6 +114,18 @@ void Widget::sendToServer(const QJsonObject &obj)
 
 void Widget::reset()
 {
+    if (client)
+    {
+        client->close();
+        client->deleteLater();
+        client = nullptr;
+    }
+    if (server)
+    {
+        server->close();
+        server->deleteLater();
+        server = nullptr;
+    }
     QJsonArray a;
     ui->board->setBoard(Engine::fromJson(a));
     ui->board->setLock(true, tr("Please connect."));
@@ -119,21 +137,11 @@ void Widget::reset()
 
 void Widget::on_btnClientStop_clicked()
 {
-    if (client)
-    {
-        client->close();
-        client = nullptr;
-    }
     reset();
 }
 
 void Widget::on_btnServerStop_clicked()
 {
-    if (server)
-    {
-        server->close();
-        server = nullptr;
-    }
     reset();
 }
 
@@ -146,9 +154,48 @@ void Widget::on_btnListen_clicked()
     {
         return;
     }
-    ui->labAddress->setText(tr("Address: %1").arg(se.address.toString()));
+
+    ui->labAddress->setText(tr("Address: ?"));
+    QHostInfo info;
+    if (se.address == QHostAddress::Any)
+    {
+        for (auto &addr : info.addresses())
+        {
+            if (!addr.isLoopback())
+            {
+                ui->labAddress->setText(tr("Address: %1").arg(addr.toString()));
+                break;
+            }
+        }
+    }
+    else if (se.address == QHostAddress::AnyIPv6)
+    {
+        for (auto &addr : info.addresses())
+        {
+            if (!addr.isLoopback() && addr.protocol() == QAbstractSocket::IPv6Protocol)
+            {
+                ui->labAddress->setText(tr("Address: %1").arg(addr.toString()));
+                break;
+            }
+        }
+    }
+    else if (se.address == QHostAddress::AnyIPv4)
+    {
+        for (auto &addr : info.addresses())
+        {
+            if (!addr.isLoopback() && addr.protocol() == QAbstractSocket::IPv4Protocol)
+            {
+                ui->labAddress->setText(tr("Address: %1").arg(addr.toString()));
+                break;
+            }
+        }
+    }
+    else
+    {
+        ui->labAddress->setText(tr("Address: %1").arg(se.address.toString()));
+    }
     ui->labPort->setText(tr("Port: %1").arg(se.port));
-    server = std::make_shared<ChessServer>(se.address, se.port);
+    server = new ChessServer(se.address, se.port, this);
     server->grantFunc = [&] (QHostAddress address, quint16 port) -> bool
     {
         if (QMessageBox::question(this, tr("Connection Request"), tr("Connection from %1:%2, grant?").arg(address.toString()).arg(port),
@@ -158,7 +205,7 @@ void Widget::on_btnListen_clicked()
         }
         return false;
     };
-    connect(static_cast<ChessServer *>(server.get()), SIGNAL(message(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
+    connect(server, SIGNAL(message(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
     server->start();
     ui->btnListen->setEnabled(false);
 }
@@ -172,8 +219,8 @@ void Widget::on_btnConnect_clicked()
     {
         return;
     }
-    client = std::make_shared<JsonSession>(new QTcpSocket());
-    connect(static_cast<JsonSession *>(client.get()), SIGNAL(onMessage(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
+    client = new JsonSession(new QTcpSocket(), this);
+    connect(client, SIGNAL(onMessage(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
     client->sock->connectToHost(se.address, se.port);
     ui->btnConnect->setEnabled(false);
 }

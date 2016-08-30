@@ -39,8 +39,8 @@ private slots:
 
 private:
     Ui::Widget *ui;
-    std::shared_ptr<ChessServer> server = nullptr;
-    std::shared_ptr<JsonSession> client = nullptr;
+    ChessServer *server = nullptr;
+    JsonSession *client = nullptr;
     char myColor = ' ';
 
     void sendToServer(const QJsonObject &);

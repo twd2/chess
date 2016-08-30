@@ -87,6 +87,20 @@ void ChessServer::onMessage(char who, const QJsonObject &obj)
             sendWin(win);
         }
     }
+    else if (type == "close")
+    {
+        if (who != myColor)
+        {
+            // peer disconnected
+            js->deleteLater();
+            js = nullptr;
+            emit message(obj);
+        }
+        else
+        {
+            // ???
+        }
+    }
 }
 
 void ChessServer::close()

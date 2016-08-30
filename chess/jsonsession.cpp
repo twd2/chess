@@ -145,6 +145,10 @@ void JsonSession::disconnected()
     }
 
     sock->close();
+
+    QJsonObject obj;
+    obj["type"] = "close";
+    emit onMessage(obj);
 }
 
 void JsonSession::updateActive()
