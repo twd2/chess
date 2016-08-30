@@ -10,12 +10,14 @@ class Engine
 {
 public:
     Engine();
-    static QString findWin(const QJsonArray &board);
-    static bool isDangerous(const QJsonArray &board, int row, int col, const QString &enemy);
+    static char findWin(const QVector<QVector<char> > &vec);
+    static bool isDangerous(QVector<QVector<char> > vec, int row, int col, char enemy);
+    static QVector<QVector<char> > toVector(const QJsonArray &board);
 private:
-    static QVector<QVector<QString> > toVector(const QJsonArray &board);
-    static bool findDangerous1(const QVector<QVector<QString> > &board, const QString &enemy);
-    static bool findDangerous2(const QVector<QVector<QString> > &board, const QString &enemy);
+    static bool findDangerous1(const QVector<QVector<char> > &vec, char enemy);
+    static bool findDangerous2(const QVector<QVector<char> > &vec, char enemy);
+    static bool findDangerous3(const QVector<QVector<char> > &vec, char enemy);
+    static bool isBlock(const QVector<QVector<char> > &vec, int row, int col);
 };
 
 #endif // ENGINE_H

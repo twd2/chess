@@ -12,18 +12,18 @@ class Board : public QWidget
 {
     Q_OBJECT
 protected:
-    QJsonArray chess;
+    QVector<QVector<char> > chess;
     bool lock = false;
 public:
     explicit Board(QWidget *parent = 0);
     void paintEvent(QPaintEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
-    QJsonArray getChess() const;
+    QVector<QVector<char> > getChess() const;
     bool getLock() const;
 signals:
     void clicked(int row, int col);
 public slots:
-    void setBoard(const QJsonArray &);
+    void setBoard(const QVector<QVector<char> > &);
     void setLock(bool);
 };
 

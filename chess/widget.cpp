@@ -17,13 +17,13 @@ Widget::~Widget()
 
 void Widget::on_pushButton_5_clicked()
 {
-    QJsonArray array;
+    QVector<QVector<char> > array;
     for (int i = 0; i < 15; ++i)
     {
-        QJsonArray row;
+        QVector<char> row;
         for (int j = 0; j < 15; ++j)
         {
-            row.append("");
+            row.append(' ');
         }
         array.append(row);
     }

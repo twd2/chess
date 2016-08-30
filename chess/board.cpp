@@ -1,6 +1,7 @@
 #include "board.h"
 #include "engine.h"
 
+#include <QDebug>
 #include <QPainter>
 
 Board::Board(QWidget *parent) : QWidget(parent)
@@ -10,13 +11,13 @@ Board::Board(QWidget *parent) : QWidget(parent)
 
 void Board::paintEvent(QPaintEvent *e)
 {
-    if (chess.count() == 0 || chess[0].toArray().count() == 0)
+    if (chess.count() == 0 || chess[0].count() == 0)
     {
         return;
     }
     int boardSize = min(width(), height());
     int rowCount = chess.count(),
-        colCount = chess[0].toArray().count();
+        colCount = chess[0].count();
     Q_ASSERT(rowCount == colCount);
     int doubleRadius = boardSize / rowCount;
     boardSize = doubleRadius * rowCount;
@@ -34,7 +35,7 @@ void Board::paintEvent(QPaintEvent *e)
 
     for (int row = 0; row < rowCount; ++row)
     {
-        const QJsonArray &colArray = chess[row].toArray();
+        const auto &colArray = chess[row];
         for (int col = 0; col < colCount; ++col)
         {
 //            if (row != 0 && row % 3 == 0 && col != 0 && col % 3 == 0)
@@ -42,21 +43,21 @@ void Board::paintEvent(QPaintEvent *e)
 //                p.setBrush(Qt::black);
 //                p.drawEllipse(col * doubleRadius + bigBoarder, row * doubleRadius + bigBoarder, doubleRadius - bigBoarder * 2, doubleRadius - bigBoarder * 2);
 //            }
-            QString ch = colArray[col].toString();
+            char ch = colArray[col];
             QRect rect(col * doubleRadius + boarder, row * doubleRadius + boarder, doubleRadius - boarder * 2, doubleRadius - boarder * 2);
-            if (ch == "W")
+            if (ch == 'W')
             {
                 p.setBrush(Qt::white);
                 p.drawEllipse(rect);
             }
-            else if (ch == "B")
+            else if (ch == 'B')
             {
                 p.setBrush(Qt::black);
                 p.drawEllipse(rect);
             }
             else
             {
-                if (Engine::isDangerous(chess, row, col, "W"))
+                if (Engine::isDangerous(chess, row, col, 'W'))
                 {
                     QPixmap pix(":/image/boom.png");
                     p.drawPixmap(rect, pix.scaled(rect.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
@@ -86,7 +87,7 @@ void Board::mousePressEvent(QMouseEvent *e)
     }
     int boardSize = min(width(), height());
     int rowCount = chess.count(),
-        colCount = chess[0].toArray().count();
+        colCount = chess[0].count();
     Q_ASSERT(rowCount == colCount);
     int doubleRadius = boardSize / rowCount;
     boardSize = doubleRadius * rowCount;
@@ -95,18 +96,19 @@ void Board::mousePressEvent(QMouseEvent *e)
 
     for (int row = 0; row < rowCount; ++row)
     {
-        const QJsonArray &colArray = chess[row].toArray();
+        const auto &colArray = chess[row];
         for (int col = 0; col < colCount; ++col)
         {
-            QString ch = colArray[col].toString();
+            char ch = colArray[col];
             QRect rect(col * doubleRadius + boarder, row * doubleRadius + boarder, doubleRadius - boarder * 2, doubleRadius - boarder * 2);
-            if (rect.contains(e->pos()) && ch == "")
+            if (rect.contains(e->pos()) && ch == ' ')
             {
                 // local render
-                QJsonArray newArray = colArray;
-                newArray[col] = e->button() == Qt::LeftButton ? "W" : "B";
+                auto newArray = colArray;
+                newArray[col] = e->button() == Qt::LeftButton ? 'W' : 'B';
                 chess[row] = newArray;
                 emit clicked(row, col);
+                qDebug () << Engine::findWin(chess);
                 update();
                 return;
             }
@@ -114,7 +116,7 @@ void Board::mousePressEvent(QMouseEvent *e)
     }
 }
 
-QJsonArray Board::getChess() const
+QVector<QVector<char> > Board::getChess() const
 {
     return chess;
 }
@@ -125,7 +127,7 @@ void Board::setLock(bool lock)
     update();
 }
 
-void Board::setBoard(const QJsonArray &chess)
+void Board::setBoard(const QVector<QVector<char> > &chess)
 {
     this->chess = chess;
     update();
