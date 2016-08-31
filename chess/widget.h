@@ -39,6 +39,8 @@ private slots:
 
     void on_btnHint_toggled(bool checked);
 
+    void on_pushButton_toggled(bool checked);
+
 private:
     Ui::Widget *ui;
     ChessServer *server = nullptr;

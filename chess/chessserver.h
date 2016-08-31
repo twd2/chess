@@ -16,9 +16,10 @@ class ChessServer
     Q_OBJECT
 public:
     std::function<bool (QHostAddress, quint16)> grantFunc;
+    QTcpServer *listener = nullptr;
     ChessServer(QHostAddress, quint16, QObject *parent = nullptr);
     ~ChessServer();
-    void start();
+    bool start();
     void close();
     void command(const QJsonObject &);
 signals:
@@ -33,7 +34,6 @@ private:
     QVector<QVector<char> > board;
     QHostAddress address;
     quint16 port;
-    QTcpServer *listener = nullptr;
     JsonSession *js = nullptr;
 
     bool place(char color, int row, int col);

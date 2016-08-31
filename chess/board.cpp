@@ -11,73 +11,71 @@ Board::Board(QWidget *parent) : QWidget(parent)
 
 void Board::paintEvent(QPaintEvent *e)
 {
-    if (chess.count() == 0 || chess[0].count() == 0)
-    {
-        return;
-    }
-    int boardSize = min(width(), height());
-    int rowCount = chess.count(),
-        colCount = chess[0].count();
-    Q_ASSERT(rowCount == colCount);
-    int doubleRadius = boardSize / rowCount;
-    boardSize = doubleRadius * rowCount;
-    int radius = doubleRadius / 2;
-    const int boarder = radius * 0.2,
-              bigBoarder = radius * 0.6;
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
-    p.fillRect(0, 0, boardSize, boardSize, Qt::darkYellow);
-    QPixmap boardImg(":/image/board.jpg");
-    p.drawPixmap(0, 0, boardSize, boardSize, boardImg.scaled(boardSize, boardSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
-    for (int row = 0; row < rowCount; ++row)
+    int boardSize = min(width(), height());
+    if (chess.count() > 0 && chess[0].count() > 0)
     {
-        p.drawLine(radius, row * doubleRadius + radius, boardSize - radius, row * doubleRadius + radius); // -
-        p.drawLine(row * doubleRadius + radius, radius, row * doubleRadius + radius, boardSize - radius); // |
-    }
-
-    for (int row = 0; row < rowCount; ++row)
-    {
-        const auto &colArray = chess[row];
-        for (int col = 0; col < colCount; ++col)
+        int rowCount = chess.count(),
+            colCount = chess[0].count();
+        Q_ASSERT(rowCount == colCount);
+        int doubleRadius = boardSize / rowCount;
+        boardSize = doubleRadius * rowCount;
+        int radius = doubleRadius / 2;
+        const int boarder = radius * 0.2,
+                  bigBoarder = radius * 0.6;
+        p.fillRect(0, 0, boardSize, boardSize, Qt::darkYellow);
+        QPixmap boardImg(":/image/board.jpg");
+        p.drawPixmap(0, 0, boardSize, boardSize, boardImg.scaled(boardSize, boardSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+        for (int row = 0; row < rowCount; ++row)
         {
-            char ch = colArray[col];
-            QRect rect(col * doubleRadius + boarder, row * doubleRadius + boarder, doubleRadius - boarder * 2, doubleRadius - boarder * 2);
-            if (ch == 'W')
+            p.drawLine(radius, row * doubleRadius + radius, boardSize - radius, row * doubleRadius + radius); // -
+            p.drawLine(row * doubleRadius + radius, radius, row * doubleRadius + radius, boardSize - radius); // |
+        }
+
+        for (int row = 0; row < rowCount; ++row)
+        {
+            const auto &colArray = chess[row];
+            for (int col = 0; col < colCount; ++col)
             {
-                p.setBrush(Qt::white);
-                p.drawEllipse(rect);
-            }
-            else if (ch == 'B')
-            {
-                p.setBrush(Qt::black);
-                p.drawEllipse(rect);
-            }
-            else
-            {
-                if (_hint)
+                char ch = colArray[col];
+                QRect rect(col * doubleRadius + boarder, row * doubleRadius + boarder, doubleRadius - boarder * 2, doubleRadius - boarder * 2);
+                if (ch == 'W')
                 {
-                    if (Engine::isDangerous(chess, row, col, Engine::otherColor(color)))
+                    p.setBrush(Qt::white);
+                    p.drawEllipse(rect);
+                }
+                else if (ch == 'B')
+                {
+                    p.setBrush(Qt::black);
+                    p.drawEllipse(rect);
+                }
+                else
+                {
+                    if (_hint)
                     {
-                        QPixmap pix(":/image/boom.png");
-                        p.drawPixmap(rect, pix.scaled(rect.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+                        if (Engine::isDangerous(chess, row, col, Engine::otherColor(color)))
+                        {
+                            QPixmap pix(":/image/boom.png");
+                            p.drawPixmap(rect, pix.scaled(rect.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+                        }
                     }
                 }
-            }
-            if (row == lastRow && col == lastCol)
-            {
-                p.fillRect(col * doubleRadius + bigBoarder, row * doubleRadius + bigBoarder, doubleRadius - bigBoarder * 2, doubleRadius - bigBoarder * 2,
-                           Qt::red);
+                if (row == lastRow && col == lastCol)
+                {
+                    p.fillRect(col * doubleRadius + bigBoarder, row * doubleRadius + bigBoarder, doubleRadius - bigBoarder * 2, doubleRadius - bigBoarder * 2,
+                               Qt::red);
+                }
             }
         }
     }
-
     if (lock)
     {
         QFont f = p.font();
         f.setBold(true);
-        f.setPointSize(doubleRadius);
+        f.setPointSize(boardSize / 16);
         p.setFont(f);
-        p.setPen(Qt::red);
+        p.setPen(QColor::fromRgb(255, 0, 0, 128));
         p.drawText(QRect(0, 0, boardSize, boardSize), Qt::AlignCenter, lockText);
         p.fillRect(0, 0, boardSize, boardSize, QColor::fromRgb(0, 0, 0, 100));
     }

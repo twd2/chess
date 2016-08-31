@@ -9,12 +9,13 @@ ChessServer::ChessServer(QHostAddress address, quint16 port, QObject *parent)
     grantFunc = [] (QHostAddress, quint16) { return true; };
 }
 
-void ChessServer::start()
+bool ChessServer::start()
 {
     close();
     listener = new QTcpServer(this);
-    listener->listen(address, port);
-    connect(listener, SIGNAL(newConnection()), this,SLOT(onNewConnection()));
+    bool succeeded = listener->listen(address, port);
+    connect(listener, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
+    return succeeded;
 }
 
 void ChessServer::onNewConnection()

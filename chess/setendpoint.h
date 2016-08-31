@@ -26,6 +26,8 @@ private slots:
     void on_buttonBox_accepted();
     void numClicked(int);
 
+    void on_btnDel_clicked();
+
 private:
     Ui::SetEndpoint *ui;
 };

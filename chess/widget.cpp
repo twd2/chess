@@ -12,6 +12,7 @@ Widget::Widget(QWidget *parent) :
     ui(new Ui::Widget)
 {
     ui->setupUi(this);
+    reset();
     connect(ui->board, SIGNAL(clicked(int,int)), this, SLOT(boardClicked(int,int)));
 }
 
@@ -128,7 +129,7 @@ void Widget::reset()
     }
     QJsonArray a;
     ui->board->setBoard(Engine::fromJson(a));
-    ui->board->setLock(true, tr("Please connect."));
+    ui->board->setLock(true, tr("Please connect or start a server."));
     ui->gClient->setEnabled(true);
     ui->gServer->setEnabled(true);
     ui->btnConnect->setEnabled(true);
@@ -210,8 +211,15 @@ void Widget::on_btnListen_clicked()
         }
         return false;
     };
+    ui->board->setLock(true, "Waiting for connection...");
     connect(server, SIGNAL(message(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
-    server->start();
+    bool succeeded = server->start();
+    if (!succeeded)
+    {
+        QMessageBox::critical(this, tr("Error"), tr("Listen failed: %1").arg(server->listener->errorString()));
+        reset();
+        return;
+    }
     ui->btnListen->setEnabled(false);
 }
 
@@ -225,6 +233,7 @@ void Widget::on_btnConnect_clicked()
         return;
     }
     client = new JsonSession(new QTcpSocket(), this);
+    ui->board->setLock(true, "Connecting...");
     connect(client, SIGNAL(onMessage(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
     client->sock->connectToHost(se.address, se.port);
     ui->btnConnect->setEnabled(false);
@@ -233,4 +242,13 @@ void Widget::on_btnConnect_clicked()
 void Widget::on_btnHint_toggled(bool checked)
 {
     ui->board->setHint(checked);
+}
+
+void Widget::on_pushButton_toggled(bool checked)
+{
+    if (checked)
+    {
+        QMessageBox::critical(this, tr("Error"), tr("Not implemented."));
+        ui->pushButton->setChecked(false);
+    }
 }

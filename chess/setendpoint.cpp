@@ -72,3 +72,11 @@ void SetEndpoint::setPort(quint16 port)
 {
     ui->lineEdit_2->setText(QString::number(port));
 }
+
+void SetEndpoint::on_btnDel_clicked()
+{
+    if (ui->lineEdit->text().length() > 0)
+    {
+        ui->lineEdit->setText(ui->lineEdit->text().mid(0, ui->lineEdit->text().length() - 1));
+    }
+}
