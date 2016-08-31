@@ -89,7 +89,7 @@ void Widget::onMessage(QJsonObject obj)
         }
         else
         {
-            ui->board->setLock(true, tr("You lost :("));
+            ui->board->setLock(true, tr("You lose :("));
         }
     }
     else if (type == "close")
@@ -228,4 +228,9 @@ void Widget::on_btnConnect_clicked()
     connect(client, SIGNAL(onMessage(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
     client->sock->connectToHost(se.address, se.port);
     ui->btnConnect->setEnabled(false);
+}
+
+void Widget::on_btnHint_toggled(bool checked)
+{
+    ui->board->setHint(checked);
 }

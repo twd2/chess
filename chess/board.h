@@ -21,6 +21,7 @@ protected:
     bool lock = false;
     QString lockText = "";
     int lastRow = -1, lastCol = -1;
+    bool _hint = true;
 public:
     char color = 'W';
     explicit Board(QWidget *parent = 0);
@@ -28,12 +29,14 @@ public:
     void mousePressEvent(QMouseEvent *) override;
     QVector<QVector<char> > getChess() const;
     bool getLock() const;
+    bool hint() const;
 signals:
     void clicked(int row, int col);
 public slots:
     void setBoard(const QVector<QVector<char> > &);
     void setLock(bool, const QString &lockText = "");
     void setLast(int row, int col);
+    void setHint(bool);
 
 
 };

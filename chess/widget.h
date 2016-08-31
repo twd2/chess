@@ -37,6 +37,8 @@ private slots:
 
     void on_btnConnect_clicked();
 
+    void on_btnHint_toggled(bool checked);
+
 private:
     Ui::Widget *ui;
     ChessServer *server = nullptr;

@@ -54,12 +54,14 @@ void Board::paintEvent(QPaintEvent *e)
             }
             else
             {
-                if (Engine::isDangerous(chess, row, col, Engine::otherColor(color)))
+                if (_hint)
                 {
-                    QPixmap pix(":/image/boom.png");
-                    p.drawPixmap(rect, pix.scaled(rect.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+                    if (Engine::isDangerous(chess, row, col, Engine::otherColor(color)))
+                    {
+                        QPixmap pix(":/image/boom.png");
+                        p.drawPixmap(rect, pix.scaled(rect.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+                    }
                 }
-                // do nothing
             }
             if (row == lastRow && col == lastCol)
             {
@@ -149,5 +151,16 @@ void Board::setLast(int row, int col)
 {
     lastRow = row;
     lastCol = col;
+    update();
+}
+
+bool Board::hint() const
+{
+    return _hint;
+}
+
+void Board::setHint(bool hint)
+{
+    _hint = hint;
     update();
 }
