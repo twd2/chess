@@ -116,6 +116,21 @@ void Widget::onMessage(QJsonObject obj)
         }
         QMessageBox::warning(this, tr("Warning"), tr("Disconnected."));
     }
+    else if (type == "error")
+    {
+        if (client)
+        {
+            // client mode
+            reset();
+        }
+        else
+        {
+            // server mode
+            resetBoard();
+        }
+        int errorCode = obj["data"].toInt();
+        QMessageBox::warning(this, tr("Error"), tr("Connection error: %1").arg(errorCode));
+    }
 }
 
 void Widget::sendToServer(const QJsonObject &obj)
@@ -248,7 +263,7 @@ void Widget::on_btnListen_clicked()
         }
         return false;
     };
-    setMessage(true, "Waiting for connection...");
+    setMessage(true, tr("Waiting for connection..."));
     connect(server, SIGNAL(message(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
     bool succeeded = server->start();
     if (!succeeded)
@@ -269,11 +284,11 @@ void Widget::on_btnConnect_clicked()
     {
         return;
     }
+    setMessage(true, tr("Connecting..."));
+    ui->btnConnect->setEnabled(false);
     client = new JsonSession(new QTcpSocket(), this);
-    setMessage(true, "Connecting...");
     connect(client, SIGNAL(onMessage(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
     client->sock->connectToHost(se.address, se.port);
-    ui->btnConnect->setEnabled(false);
 }
 
 void Widget::on_btnHint_toggled(bool checked)

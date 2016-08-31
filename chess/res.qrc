@@ -4,4 +4,7 @@
         <file>board.jpg</file>
         <file>forbid.png</file>
     </qresource>
+    <qresource prefix="/locale">
+        <file>zh_CN.qm</file>
+    </qresource>
 </RCC>

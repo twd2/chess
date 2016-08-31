@@ -1,6 +1,7 @@
 #include "engine.h"
 
 #include <QDebug>
+#include <QObject>
 
 std::default_random_engine Engine::gen;
 std::uniform_int_distribution<int> Engine::dist(0, 1);
@@ -487,15 +488,19 @@ QString Engine::name(chess_t ch)
 {
     if (ch == CH_BLACK)
     {
-        return "Black";
+        return QObject::tr("Black");
     }
     else if (ch == CH_WHITE)
     {
-        return "White";
+        return QObject::tr("White");
+    }
+    else if (ch == CH_VIEWER)
+    {
+        return QObject::tr("Viewer");
     }
     else
     {
-        return "Control";
+        return QObject::tr("Control");
     }
 }
 

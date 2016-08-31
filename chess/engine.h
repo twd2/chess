@@ -18,6 +18,7 @@ constexpr chess_t CH_WHITE = 'W';
 constexpr chess_t CH_FORBID = 'X';
 constexpr chess_t CH_SPACE = ' ';
 constexpr chess_t CH_DRAW = '-';
+constexpr chess_t CH_VIEWER = 'V';
 
 class Engine
 {

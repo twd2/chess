@@ -33,3 +33,8 @@ FORMS    += widget.ui \
 
 RESOURCES += \
     res.qrc
+
+TRANSLATIONS += zh_CN.ts
+
+DISTFILES += \
+    zh_CN.ts
