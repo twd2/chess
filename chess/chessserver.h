@@ -1,6 +1,7 @@
 #ifndef CHESSSERVER_H
 #define CHESSSERVER_H
 
+#include "engine.h"
 #include "jsonsession.h"
 
 #include <functional>
@@ -29,17 +30,19 @@ public slots:
     void onClientMessage(QJsonObject);
     void onMessage(char who, const QJsonObject &);
 private:
-    char myColor = 'B';
-    char turn = 'B';
-    QVector<QVector<char> > board;
+    chess_t myColor = CH_BLACK;
+    chess_t turn = CH_BLACK;
+    bool isPlaying = false;
+    board_t board;
     QHostAddress address;
     quint16 port;
-    JsonSession *js = nullptr;
+    JsonSession *peer = nullptr;
 
-    bool place(char color, int row, int col);
-    void sendWin(char);
+    void startGame();
+    bool place(chess_t color, int row, int col);
+    void sendWin(chess_t);
     void sendColors();
-    void sendBoardBoth(int lastRow = -1, int lastCol = -1);
+    void sendBoardBoth(int lastRow = -1, int lastCol = -1, bool inc = false);
     void sendBoth(const QJsonObject &);
 };
 

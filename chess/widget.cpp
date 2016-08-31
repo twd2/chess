@@ -1,6 +1,5 @@
 #include "widget.h"
 #include "ui_widget.h"
-#include "engine.h"
 #include "setendpoint.h"
 
 #include <QMessageBox>
@@ -14,6 +13,7 @@ Widget::Widget(QWidget *parent) :
     ui->setupUi(this);
     reset();
     connect(ui->board, SIGNAL(clicked(int,int)), this, SLOT(boardClicked(int,int)));
+    ui->label_2->setText(tr("By Wandai :) Enjoy~"));
 }
 
 Widget::~Widget()
@@ -21,24 +21,9 @@ Widget::~Widget()
     delete ui;
 }
 
-void Widget::on_btnTestBoard_clicked()
-{
-    QVector<QVector<char> > array;
-    for (int i = 0; i < 15; ++i)
-    {
-        QVector<char> row;
-        for (int j = 0; j < 15; ++j)
-        {
-            row.append(' ');
-        }
-        array.append(row);
-    }
-    ui->board->setBoard(array);
-}
-
 void Widget::on_btnTestLock_clicked()
 {
-    ui->board->setLock(!ui->board->getLock(), "Hello");
+    setMessage(!ui->board->lock(), "Hello");
 }
 
 void Widget::boardClicked(int row, int col)
@@ -49,54 +34,87 @@ void Widget::boardClicked(int row, int col)
     data["row"] = row;
     data["col"] = col;
     obj["data"] = data;
-    ui->board->setLock(true, tr("Sending data..."));
+    setMessage(true, tr("Sending data..."));
     sendToServer(obj);
 }
 
 void Widget::onMessage(QJsonObject obj)
 {
-    qDebug() << "widget on message" << obj;
     QString type = obj["type"].toString();
+    qDebug() << "widget on message" << obj;
     if (type == "hello")
     {
         // connected
-        ui->board->setLock(true, tr("Waiting for start..."));
+        setMessage(true, tr("Waiting for start..."));
     }
     else if (type == "color")
     {
-        ui->board->color = myColor = obj["data"].toString()[0].toLatin1();
+        ui->board->myColor = myColor = Engine::fromJson(obj["data"]);
+        ui->labColor->setText(tr("My color: %1").arg(Engine::name(myColor)));
     }
     else if (type == "update")
     {
         QJsonObject data = obj["data"].toObject();
-        ui->board->setBoard(Engine::fromJson(data["board"].toArray()));
-        ui->board->setLast(data["row"].toInt(), data["col"].toInt());
-        // play music: placed
-        if (data["turn"].toString()[0].toLatin1() == myColor)
+        chess_t turn = Engine::fromJson(data["turn"]);
+        if (data.contains("board"))
         {
-            ui->board->setLock(false);
+            // full update
+            _board = Engine::fromJson(data["board"].toArray());
         }
         else
         {
-            ui->board->setLock(true, tr("Waiting for peer..."));
+            // inc update
+            _board[data["row"].toInt()][data["col"].toInt()] = Engine::previousColor(turn);
+        }
+        ui->board->setBoard(_board);
+        ui->board->setLast(data["row"].toInt(), data["col"].toInt());
+        // play music: placed
+        if (turn == myColor)
+        {
+            setMessage(false, tr("It's your turn."));
+
+            // auto
+            if (ui->btnAuto->isChecked())
+            {
+                QPoint p = Engine::findMostDangerous(_board, myColor);
+                qDebug() << p;
+                boardClicked(p.y(), p.x());
+            }
+        }
+        else
+        {
+            setMessage(true, tr("Waiting for peer..."));
         }
     }
     else if (type == "win")
     {
         char win = obj["data"].toString()[0].toLatin1();
-        if (win == myColor)
+        if (win == '-')
         {
-            ui->board->setLock(true, tr("You WIN :)"));
+            setMessage(true, tr("Draw O.O"));
+        }
+        else if (win == myColor)
+        {
+            setMessage(true, tr("You WIN :)"));
         }
         else
         {
-            ui->board->setLock(true, tr("You lose :("));
+            setMessage(true, tr("You lose :("));
         }
     }
     else if (type == "close")
     {
+        if (client)
+        {
+            // client mode
+            reset();
+        }
+        else
+        {
+            // server mode
+            resetBoard();
+        }
         QMessageBox::warning(this, tr("Warning"), tr("Disconnected."));
-        reset();
     }
 }
 
@@ -127,13 +145,32 @@ void Widget::reset()
         server->deleteLater();
         server = nullptr;
     }
-    QJsonArray a;
-    ui->board->setBoard(Engine::fromJson(a));
-    ui->board->setLock(true, tr("Please connect or start a server."));
     ui->gClient->setEnabled(true);
     ui->gServer->setEnabled(true);
     ui->btnConnect->setEnabled(true);
     ui->btnListen->setEnabled(true);
+    ui->labColor->setText(tr("My color: ?"));
+    resetBoard();
+}
+
+void Widget::resetBoard()
+{
+    QJsonArray a;
+    ui->board->setBoard(Engine::fromJson(a));
+    setMessage(true, tr("Please connect or start a server."));
+}
+
+void Widget::setMessage(bool lock, const QString &msg)
+{
+    if (lock)
+    {
+        ui->board->setLock(true, msg);
+    }
+    else
+    {
+        ui->board->setLock(false);
+    }
+    ui->labInfo->setText(msg);
 }
 
 void Widget::on_btnClientStop_clicked()
@@ -211,7 +248,7 @@ void Widget::on_btnListen_clicked()
         }
         return false;
     };
-    ui->board->setLock(true, "Waiting for connection...");
+    setMessage(true, "Waiting for connection...");
     connect(server, SIGNAL(message(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
     bool succeeded = server->start();
     if (!succeeded)
@@ -233,7 +270,7 @@ void Widget::on_btnConnect_clicked()
         return;
     }
     client = new JsonSession(new QTcpSocket(), this);
-    ui->board->setLock(true, "Connecting...");
+    setMessage(true, "Connecting...");
     connect(client, SIGNAL(onMessage(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
     client->sock->connectToHost(se.address, se.port);
     ui->btnConnect->setEnabled(false);
@@ -244,11 +281,9 @@ void Widget::on_btnHint_toggled(bool checked)
     ui->board->setHint(checked);
 }
 
-void Widget::on_pushButton_toggled(bool checked)
+void Widget::on_btnStart_clicked()
 {
-    if (checked)
-    {
-        QMessageBox::critical(this, tr("Error"), tr("Not implemented."));
-        ui->pushButton->setChecked(false);
-    }
+    QJsonObject obj;
+    obj["type"] = "new";
+    sendToServer(obj);
 }

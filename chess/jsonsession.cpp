@@ -4,6 +4,9 @@
 #include <QJsonObject>
 #include <QtEndian>
 
+constexpr quint32 JsonSession::maxLength;
+constexpr quint32 JsonSession::bufferSize;
+
 JsonSession::JsonSession(QTcpSocket *sock, QObject *parent)
     : QObject(parent), sock(sock), lastActive(QDateTime::currentDateTimeUtc())
 {
@@ -11,6 +14,7 @@ JsonSession::JsonSession(QTcpSocket *sock, QObject *parent)
     updateActive();
     connect(sock, SIGNAL(readyRead()), this, SLOT(read()));
     connect(sock, SIGNAL(disconnected()), this, SLOT(disconnected()));
+    connect(sock, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(error(QAbstractSocket::SocketError)));
     // echo test: connect(this, SIGNAL(onMessage(QJsonObject)), this, SLOT(send(QJsonObject)));
 }
 
@@ -21,7 +25,6 @@ inline quint32 min(const quint32 &a, const quint32 &b)
 
 void JsonSession::read()
 {
-    qDebug() << "on read";
     if (!running)
     {
         return;
@@ -38,7 +41,6 @@ void JsonSession::read()
                 buffer = new quint8[sizeof(package_header)];
             }
             QByteArray data = sock->read(min(sizeof(package_header) - current_pos, bufferSize));
-            qDebug() << data;
             if (data.count() == 0)
             {
                 read = false;
@@ -46,17 +48,13 @@ void JsonSession::read()
             }
             memcpy(buffer + current_pos, data.data(), data.count());
             current_pos += data.count();
-            qDebug() << buffer[4] << buffer[5] << buffer[6] << buffer[7] << current_pos;
             if (current_pos == sizeof(package_header))
             {
                 if (header)
                 {
                     delete header;
                 }
-                qDebug() << buffer[4] << buffer[5] << buffer[6] << buffer[7];
                 header = reinterpret_cast<package_header *>(buffer);
-                qDebug() << "buffer=" << buffer;
-                qDebug() << "header=" << header;
                 buffer = nullptr;
                 current_pos = 0;
                 header->length = qFromBigEndian(header->length);
@@ -77,10 +75,8 @@ void JsonSession::read()
             if (!buffer)
             {
                 buffer = new quint8[header->length];
-                qDebug() << "data buffer=" << buffer;
             }
             QByteArray data = sock->read(min(header->length - current_pos, bufferSize));
-            qDebug() << data;
             if (data.count() == 0)
             {
                 read = false;
@@ -90,10 +86,6 @@ void JsonSession::read()
             current_pos += data.count();
             if (current_pos == header->length)
             {
-                for (int i = 0; i < header->length; ++i)
-                {
-                    qDebug() << i << buffer[i];
-                }
                 emit onMessage(QJsonDocument::fromJson(QByteArray::fromRawData(reinterpret_cast<const char *>(buffer), header->length)).object());
                 delete buffer;
                 delete header;
@@ -110,7 +102,6 @@ void JsonSession::read()
         }
         updateActive();
     }
-    qDebug() << "after read";
 }
 
 void JsonSession::send(const QJsonObject &obj)
@@ -151,6 +142,15 @@ void JsonSession::disconnected()
     emit onMessage(obj);
 }
 
+void JsonSession::error(QAbstractSocket::SocketError err)
+{
+    qDebug() << "error" << err;
+    QJsonObject obj;
+    obj["type"] = "error";
+    obj["data"] = err;
+    emit onMessage(obj);
+}
+
 void JsonSession::updateActive()
 {
     lastActive = QDateTime::currentDateTimeUtc();
@@ -173,7 +173,7 @@ JsonSession::~JsonSession()
     if (sock)
     {
         close();
-        delete sock;
+        sock->deleteLater();
         sock = nullptr;
     }
 }

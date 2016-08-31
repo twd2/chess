@@ -1,5 +1,4 @@
 #include "chessserver.h"
-#include "engine.h"
 
 #include <QTcpSocket>
 
@@ -21,31 +20,30 @@ bool ChessServer::start()
 void ChessServer::onNewConnection()
 {
     QTcpSocket *sock = listener->nextPendingConnection();
-    if (js || !grantFunc(sock->peerAddress(), sock->peerPort()))
+    if (peer || !grantFunc(sock->peerAddress(), sock->peerPort()))
     {
         sock->close();
         delete sock;
     }
     else
     {
-        js = new JsonSession(sock, this);
-        connect(js, SIGNAL(onMessage(QJsonObject)), this, SLOT(onClientMessage(QJsonObject)));
+        if (peer)
+        {
+            sock->close();
+            delete sock;
+            return;
+        }
+        peer = new JsonSession(sock, this);
+        connect(peer, SIGNAL(onMessage(QJsonObject)), this, SLOT(onClientMessage(QJsonObject)));
 
-        // "hello"s
-        QJsonObject objHello;
-        objHello["type"] = "hello";
-        sendBoth(objHello);
-
-        board = Engine::generate();
-        // set up turn, myColor
-        sendColors();
-        sendBoardBoth();
+        startGame();
     }
 }
 
 void ChessServer::onClientMessage(QJsonObject obj)
 {
-    onMessage(Engine::otherColor(myColor), obj);
+    // TODO: multi-color support
+    onMessage(Engine::nextColor(myColor), obj);
 }
 
 void ChessServer::command(const QJsonObject &obj)
@@ -53,17 +51,17 @@ void ChessServer::command(const QJsonObject &obj)
     onMessage(myColor, obj);
 }
 
-void ChessServer::onMessage(char who, const QJsonObject &obj)
+void ChessServer::onMessage(chess_t who, const QJsonObject &obj)
 {
-    qDebug() << "server on message" << obj;
     QString type = obj["type"].toString();
+    qDebug() << "server on message" << who << obj;
     if (type == "hello")
     {
         // nothing to do
     }
     else if (type == "place")
     {
-        if (turn != who)
+        if (!isPlaying || turn != who)
         {
             // reject
             return;
@@ -78,13 +76,14 @@ void ChessServer::onMessage(char who, const QJsonObject &obj)
         }
 
         // next turn
-        turn = Engine::otherColor(turn);
-        sendBoardBoth(row, col);
+        turn = Engine::nextColor(turn);
+        sendBoardBoth(row, col, true);
 
         // check win
-        char win = Engine::findWin(board);
-        if (win != ' ')
+        chess_t win = Engine::findWin(board);
+        if (win != CH_SPACE)
         {
+            isPlaying = false;
             sendWin(win);
         }
     }
@@ -93,8 +92,8 @@ void ChessServer::onMessage(char who, const QJsonObject &obj)
         if (who != myColor)
         {
             // peer disconnected
-            js->deleteLater();
-            js = nullptr;
+            peer->deleteLater();
+            peer = nullptr;
             emit message(obj);
         }
         else
@@ -102,6 +101,46 @@ void ChessServer::onMessage(char who, const QJsonObject &obj)
             // ???
         }
     }
+    else if (type == "error")
+    {
+        if (who != myColor)
+        {
+            // peer error
+            peer->deleteLater();
+            peer = nullptr;
+            emit message(obj);
+        }
+        else
+        {
+            // self error ???
+        }
+    }
+    else if (type == "new")
+    {
+        if (isPlaying)
+        {
+            // reject
+            return;
+        }
+        startGame();
+    }
+}
+
+void ChessServer::startGame()
+{
+    turn = CH_BLACK;
+    // "hello"s
+    QJsonObject objHello;
+    objHello["type"] = "hello";
+    sendBoth(objHello);
+
+    // setup
+    board = Engine::generate(15, 15, [] (int y, int x) { return y != x * x / 15; });
+    myColor = Engine::randomColor();
+    isPlaying = true;
+
+    sendColors();
+    sendBoardBoth();
 }
 
 void ChessServer::close()
@@ -109,36 +148,39 @@ void ChessServer::close()
     if (listener)
     {
         listener->close();
-        delete listener;
+        listener->deleteLater();
         listener = nullptr;
     }
 
-    if (js)
+    if (peer)
     {
-        js->close();
-        delete js;
-        js = nullptr;
+        peer->close();
+        peer->deleteLater();
+        peer = nullptr;
     }
 }
 
-void ChessServer::sendBoardBoth(int lastRow, int lastCol)
+void ChessServer::sendBoardBoth(int lastRow, int lastCol, bool inc)
 {
     QJsonObject obj;
     obj["type"] = "update";
     QJsonObject data;
     data["row"] = lastRow;
     data["col"] = lastCol;
-    data["turn"] = QString(turn);
-    data["board"] = Engine::toJson(board);
+    data["turn"] = Engine::toJson(turn);
+    if (!inc)
+    {
+        data["board"] = Engine::toJson(board);
+    }
     obj["data"] = data;
     sendBoth(obj);
 }
 
-void ChessServer::sendWin(char win)
+void ChessServer::sendWin(chess_t win)
 {
     QJsonObject obj;
     obj["type"] = "win";
-    obj["data"] = QString(win);
+    obj["data"] = Engine::toJson(win);
     sendBoth(obj);
 }
 
@@ -146,24 +188,25 @@ void ChessServer::sendColors()
 {
     QJsonObject obj;
     obj["type"] = "color";
-    obj["data"] = QString(myColor);
+    obj["data"] = Engine::toJson(myColor);
     emit message(obj);
 
-    obj["data"] = QString(Engine::otherColor(myColor));
-    js->send(obj);
+    // TODO: multi-color support
+    obj["data"] = Engine::toJson(Engine::nextColor(myColor));
+    peer->send(obj);
 }
 
 void ChessServer::sendBoth(const QJsonObject &obj)
 {
-    js->send(obj);
+    peer->send(obj);
     emit message(obj);
 }
 
-bool ChessServer::place(char color, int row, int col)
+bool ChessServer::place(chess_t color, int row, int col)
 {
     if (row >= 0 && row < board.count() && col >= 0 && col < board[0].count())
     {
-        if (board[row][col] == ' ')
+        if (board[row][col] == CH_SPACE)
         {
             board[row][col] = color;
             return true;

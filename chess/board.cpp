@@ -1,5 +1,4 @@
 #include "board.h"
-#include "engine.h"
 
 #include <QDebug>
 #include <QPainter>
@@ -9,15 +8,15 @@ Board::Board(QWidget *parent) : QWidget(parent)
 
 }
 
-void Board::paintEvent(QPaintEvent *e)
+void Board::paintEvent(QPaintEvent *)
 {
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
     int boardSize = min(width(), height());
-    if (chess.count() > 0 && chess[0].count() > 0)
+    if (_board.count() > 0 && _board[0].count() > 0)
     {
-        int rowCount = chess.count(),
-            colCount = chess[0].count();
+        int rowCount = _board.count(),
+            colCount = _board[0].count();
         Q_ASSERT(rowCount == colCount);
         int doubleRadius = boardSize / rowCount;
         boardSize = doubleRadius * rowCount;
@@ -33,31 +32,48 @@ void Board::paintEvent(QPaintEvent *e)
             p.drawLine(row * doubleRadius + radius, radius, row * doubleRadius + radius, boardSize - radius); // |
         }
 
+        QSize rectSize(doubleRadius - boarder * 2, doubleRadius - boarder * 2);
+        QPixmap pixForbid = QPixmap(":/image/forbid.png").scaled(rectSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        QPixmap pixBoom = QPixmap(":/image/boom.png").scaled(rectSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
         for (int row = 0; row < rowCount; ++row)
         {
-            const auto &colArray = chess[row];
+            const auto &colArray = _board[row];
             for (int col = 0; col < colCount; ++col)
             {
-                char ch = colArray[col];
-                QRect rect(col * doubleRadius + boarder, row * doubleRadius + boarder, doubleRadius - boarder * 2, doubleRadius - boarder * 2);
-                if (ch == 'W')
+                chess_t ch = colArray[col];
+                QRect rect(col * doubleRadius + boarder, row * doubleRadius + boarder, rectSize.width(), rectSize.height());
+                if (ch == CH_WHITE)
                 {
                     p.setBrush(Qt::white);
                     p.drawEllipse(rect);
                 }
-                else if (ch == 'B')
+                else if (ch == CH_BLACK)
                 {
                     p.setBrush(Qt::black);
                     p.drawEllipse(rect);
+                }
+                else if (ch == CH_FORBID)
+                {
+                    p.drawPixmap(rect, pixForbid);
                 }
                 else
                 {
                     if (_hint)
                     {
-                        if (Engine::isDangerous(chess, row, col, Engine::otherColor(color)))
+                        bool dangerous = false;
+                        chess_t color = Engine::nextColor(myColor);
+                        while (color != myColor)
                         {
-                            QPixmap pix(":/image/boom.png");
-                            p.drawPixmap(rect, pix.scaled(rect.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+                            if (Engine::isDangerous(_board, row, col, color))
+                            {
+                                dangerous = true;
+                                break;
+                            }
+                            color = Engine::nextColor(color);
+                        }
+                        if (dangerous)
+                        {
+                            p.drawPixmap(rect, pixBoom);
                         }
                     }
                 }
@@ -69,7 +85,7 @@ void Board::paintEvent(QPaintEvent *e)
             }
         }
     }
-    if (lock)
+    if (_lock)
     {
         QFont f = p.font();
         f.setBold(true);
@@ -83,66 +99,63 @@ void Board::paintEvent(QPaintEvent *e)
 
 void Board::mousePressEvent(QMouseEvent *e)
 {
-    if (lock)
+    if (_lock)
     {
         return;
     }
-    if (chess.count() == 0 || chess[0].count() == 0)
+    if (_board.count() == 0 || _board[0].count() == 0)
     {
         return;
     }
     int boardSize = min(width(), height());
-    int rowCount = chess.count(),
-        colCount = chess[0].count();
+    int rowCount = _board.count(),
+        colCount = _board[0].count();
     Q_ASSERT(rowCount == colCount);
     int doubleRadius = boardSize / rowCount;
     boardSize = doubleRadius * rowCount;
     int radius = doubleRadius / 2;
     const int boarder = radius * 0.2;
 
+    // TODO: improve
     for (int row = 0; row < rowCount; ++row)
     {
-        auto &rowArray = chess[row];
         for (int col = 0; col < colCount; ++col)
         {
-            char ch = rowArray[col];
             QRect rect(col * doubleRadius + boarder, row * doubleRadius + boarder, doubleRadius - boarder * 2, doubleRadius - boarder * 2);
-            if (rect.contains(e->pos()) && ch == ' ')
+            if (rect.contains(e->pos()) && !Engine::isBlock(_board, row, col))
             {
                 // local render
-                rowArray[col] = color;
-                emit clicked(row, col);
-                // setLast(row, col); // test
-                qDebug () << "win=" << Engine::findWin(chess);
+                _board[row][col] = myColor;
                 update();
+                emit clicked(row, col);
                 return;
             }
         }
     }
 }
 
-QVector<QVector<char> > Board::getChess() const
+board_t Board::board() const
 {
-    return chess;
+    return _board;
 }
 
 void Board::setLock(bool lock, const QString &lockText)
 {
-    this->lock = lock;
+    this->_lock = lock;
     this->lockText = lockText;
     update();
 }
 
-void Board::setBoard(const QVector<QVector<char> > &chess)
+void Board::setBoard(const board_t &chess)
 {
-    this->chess = chess;
+    this->_board = chess;
     setLast(-1, -1);
     update();
 }
 
-bool Board::getLock() const
+bool Board::lock() const
 {
-    return lock;
+    return _lock;
 }
 
 void Board::setLast(int row, int col)
