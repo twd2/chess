@@ -46,7 +46,7 @@ chess_t Engine::findWin(const board_t &vec)
                 isFull = 0;
                 continue;
             }
-            if (ch != CH_WHITE && ch != CH_BLACK)
+            if (!isColor(ch))
             {
                 continue;
             }
@@ -94,7 +94,7 @@ chess_t Engine::findWin(const board_t &vec)
 
 bool Engine::isDangerous(board_t vec, int row, int col, chess_t enemy)
 {
-    if (enemy != CH_WHITE && enemy != CH_BLACK)
+    if (!isColor(enemy))
     {
         return false;
     }

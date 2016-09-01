@@ -1,3 +1,4 @@
+#include "utils.h"
 #include "setendpoint.h"
 #include "ui_setendpoint.h"
 
@@ -8,6 +9,9 @@ SetEndpoint::SetEndpoint(QWidget *parent) :
     ui(new Ui::SetEndpoint)
 {
     ui->setupUi(this);
+
+    setPort(GAME_PORT);
+
     QSignalMapper *mapper = new QSignalMapper(this);
     mapper->setMapping(ui->num0, 0);
     connect(ui->num0, SIGNAL(clicked(bool)), mapper, SLOT(map()));
@@ -46,7 +50,14 @@ void SetEndpoint::on_buttonBox_rejected()
 
 void SetEndpoint::on_buttonBox_accepted()
 {
-    address = QHostAddress(ui->lineEdit->text());
+    if (ui->lineEdit->text() != "")
+    {
+        address = QHostAddress(ui->lineEdit->text());
+    }
+    else
+    {
+        address = QHostAddress::Any;
+    }
     port = ui->lineEdit_2->text().toInt();
     accept();
 }
@@ -65,7 +76,14 @@ void SetEndpoint::numClicked(int n)
 
 void SetEndpoint::setAddress(QHostAddress addr)
 {
-    ui->lineEdit->setText(addr.toString());
+    if (addr == QHostAddress::Any)
+    {
+        ui->lineEdit->setText("");
+    }
+    else
+    {
+        ui->lineEdit->setText(addr.toString());
+    }
 }
 
 void SetEndpoint::setPort(quint16 port)

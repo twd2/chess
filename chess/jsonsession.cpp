@@ -106,7 +106,7 @@ void JsonSession::read()
 
 void JsonSession::send(const QJsonObject &obj)
 {
-    QByteArray data = QJsonDocument(obj).toJson();
+    QByteArray data = QJsonDocument(obj).toJson(QJsonDocument::Compact);
     package_header header;
     strcpy(header.magic, MAGIC_HEADER);
     header.length = qToBigEndian(data.count());

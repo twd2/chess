@@ -18,7 +18,9 @@ SOURCES += main.cpp\
     board.cpp \
     engine.cpp \
     jsonsession.cpp \
-    chessserver.cpp
+    chessserver.cpp \
+    serverdiscovery.cpp \
+    discoverylist.cpp
 
 HEADERS  += widget.h \
     setendpoint.h \
@@ -26,10 +28,13 @@ HEADERS  += widget.h \
     utils.h \
     engine.h \
     jsonsession.h \
-    chessserver.h
+    chessserver.h \
+    serverdiscovery.h \
+    discoverylist.h
 
 FORMS    += widget.ui \
-    setendpoint.ui
+    setendpoint.ui \
+    discoverylist.ui
 
 RESOURCES += \
     res.qrc

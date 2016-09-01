@@ -43,6 +43,11 @@ public:
         return QString(ch);
     }
 
+    static constexpr inline bool isColor(chess_t ch)
+    {
+        return ch == CH_BLACK || ch == CH_WHITE;
+    }
+
     static board_t generate(int row = 15, int col = 15);
     static board_t generate(int row, int col, std::function<bool (int, int)> shapeFunc);
 

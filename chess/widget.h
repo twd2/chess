@@ -4,6 +4,7 @@
 #include "chessserver.h"
 #include "jsonsession.h"
 #include "engine.h"
+#include "serverdiscovery.h"
 
 #include <memory>
 
@@ -41,10 +42,18 @@ private slots:
 
     void on_btnStart_clicked();
 
+    void on_btnDiscovery_clicked();
+signals:
+    void startDiscovery();
+    void stopDiscovery();
 private:
     Ui::Widget *ui;
+    QHostAddress _lastAddress = QHostAddress("127.0.0.1");
+    quint16 _lastPort = GAME_PORT;
     ChessServer *server = nullptr;
     JsonSession *client = nullptr;
+    ServerDiscovery *discovery = nullptr;
+    QThread *discoveryThread = nullptr;
     char myColor = CH_SPACE;
     board_t _board;
 
@@ -52,6 +61,7 @@ private:
     void reset();
     void resetBoard();
     void setMessage(bool lock, const QString &msg);
+    void connectToServer(QHostAddress, quint16);
 };
 
 #endif // WIDGET_H

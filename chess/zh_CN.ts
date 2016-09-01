@@ -2,6 +2,19 @@
 <!DOCTYPE TS>
 <TS version="2.1">
 <context>
+    <name>DiscoveryList</name>
+    <message>
+        <location filename="discoverylist.ui" line="14"/>
+        <source>Discovery</source>
+        <translation>发现</translation>
+    </message>
+    <message>
+        <location filename="discoverylist.ui" line="22"/>
+        <source>Refresh</source>
+        <translation>刷新</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <location filename="engine.cpp" line="491"/>
@@ -15,6 +28,11 @@
     </message>
     <message>
         <location filename="engine.cpp" line="499"/>
+        <source>Viewer</source>
+        <translation>查看者</translation>
+    </message>
+    <message>
+        <location filename="engine.cpp" line="503"/>
         <source>Control</source>
         <translation>控制</translation>
     </message>
@@ -121,17 +139,16 @@
     </message>
     <message>
         <location filename="widget.ui" line="26"/>
-        <location filename="widget.cpp" line="167"/>
+        <location filename="widget.cpp" line="174"/>
         <source>My color: ?</source>
         <translation>我的颜色：？</translation>
     </message>
     <message>
-        <location filename="widget.ui" line="33"/>
         <source>.</source>
-        <translation>.</translation>
+        <translation type="vanished">.</translation>
     </message>
     <message>
-        <location filename="widget.ui" line="40"/>
+        <location filename="widget.ui" line="33"/>
         <source>Please start.</source>
         <translation>请开始。</translation>
     </message>
@@ -167,23 +184,28 @@
     </message>
     <message>
         <location filename="widget.ui" line="122"/>
+        <source>Discovery</source>
+        <translation>发现</translation>
+    </message>
+    <message>
+        <location filename="widget.ui" line="129"/>
         <source>Connect</source>
         <translation>连接</translation>
     </message>
     <message>
-        <location filename="widget.ui" line="129"/>
+        <location filename="widget.ui" line="136"/>
         <location filename="widget.ui" line="166"/>
         <source>Stop</source>
         <translation>停止</translation>
     </message>
     <message>
-        <location filename="widget.ui" line="139"/>
+        <location filename="widget.ui" line="146"/>
         <source>As Host</source>
         <translation>作为主机</translation>
     </message>
     <message>
-        <location filename="widget.ui" line="145"/>
-        <location filename="widget.cpp" line="211"/>
+        <location filename="widget.ui" line="43"/>
+        <location filename="widget.cpp" line="229"/>
         <source>Address: ?</source>
         <translation>地址：？</translation>
     </message>
@@ -198,122 +220,115 @@
         <translation>监听</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="16"/>
         <source>By Wandai :) Enjoy~</source>
-        <translation>Wandai制作，祝君好运。</translation>
+        <translation type="vanished">Wandai制作，祝君好运。</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="37"/>
+        <location filename="widget.cpp" line="42"/>
         <source>Sending data...</source>
         <translation>正在发送数据...</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="48"/>
+        <location filename="widget.cpp" line="53"/>
         <source>Waiting for start...</source>
         <translation>等待开始...</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="53"/>
+        <location filename="widget.cpp" line="58"/>
         <source>My color: %1</source>
         <translation>我的颜色：%1</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="74"/>
+        <location filename="widget.cpp" line="79"/>
         <source>It&apos;s your turn.</source>
         <translation>该您了。</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="86"/>
+        <location filename="widget.cpp" line="91"/>
         <source>Waiting for peer...</source>
         <translation>等待对方...</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="94"/>
+        <location filename="widget.cpp" line="99"/>
         <source>Draw O.O</source>
         <translation>平局 O.O</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="98"/>
+        <location filename="widget.cpp" line="103"/>
         <source>You WIN :)</source>
         <translation>您赢了 :)</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="102"/>
+        <location filename="widget.cpp" line="107"/>
         <source>You lose :(</source>
         <translation>您输了 :(</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="117"/>
+        <location filename="widget.cpp" line="122"/>
         <source>Warning</source>
         <translation>警告</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="117"/>
+        <location filename="widget.cpp" line="122"/>
         <source>Disconnected.</source>
         <translation>已断开。</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="132"/>
+        <location filename="widget.cpp" line="137"/>
         <source>Connection error: %1</source>
         <translation>连接错误：%1</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="175"/>
+        <location filename="widget.cpp" line="182"/>
         <source>Please connect or start a server.</source>
         <translation>请连接或者创建一个服务器。</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="214"/>
-        <location filename="widget.cpp" line="227"/>
         <source>Address: [::1]</source>
-        <translation>地址：[::1]</translation>
+        <translation type="vanished">地址：[::1]</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="220"/>
-        <location filename="widget.cpp" line="233"/>
-        <location filename="widget.cpp" line="246"/>
-        <location filename="widget.cpp" line="253"/>
+        <location filename="widget.cpp" line="275"/>
         <source>Address: %1</source>
         <translation>地址：%1</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="240"/>
         <source>Address: 127.0.0.1</source>
-        <translation>地址：127.0.0.1</translation>
+        <translation type="vanished">地址：127.0.0.1</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="255"/>
+        <location filename="widget.cpp" line="276"/>
         <source>Port: %1</source>
         <translation>端口：%1</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="259"/>
+        <location filename="widget.cpp" line="280"/>
         <source>Connection Request</source>
         <translation>连接请求</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="259"/>
+        <location filename="widget.cpp" line="280"/>
         <source>Connection from %1:%2, grant?</source>
         <translation>连接来自%1:%2，同意？</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="287"/>
+        <location filename="widget.cpp" line="200"/>
         <source>Connecting...</source>
         <translation>正在连接...</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="132"/>
-        <location filename="widget.cpp" line="271"/>
+        <location filename="widget.cpp" line="137"/>
+        <location filename="widget.cpp" line="292"/>
         <source>Error</source>
         <translation>错误</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="266"/>
+        <location filename="widget.cpp" line="287"/>
         <source>Waiting for connection...</source>
         <translation>正在等待连接...</translation>
     </message>
     <message>
-        <location filename="widget.cpp" line="271"/>
+        <location filename="widget.cpp" line="292"/>
         <source>Listen failed: %1</source>
         <translation>监听失败：%1</translation>
     </message>
