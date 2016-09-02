@@ -79,6 +79,7 @@ void Widget::onMessage(QJsonObject obj)
             setMessage(false, tr("It's your turn."));
 
             // auto
+            // TODO: multi-thread
             if (ui->btnAuto->isChecked())
             {
                 QPoint p = Engine::findMostDangerous(_board, myColor);

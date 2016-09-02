@@ -130,10 +130,6 @@ void JsonSession::disconnected()
 {
     qDebug() << "disconnected";
     running = false;
-    if (sock->isWritable())
-    {
-        sock->waitForBytesWritten(1000);
-    }
 
     sock->close();
 

@@ -128,15 +128,17 @@ void ChessServer::onMessage(chess_t who, const QJsonObject &obj)
 
 void ChessServer::startGame()
 {
-    turn = CH_BLACK;
     // "hello"s
     QJsonObject objHello;
     objHello["type"] = "hello";
     sendBoth(objHello);
 
     // setup
-    board = Engine::generate(15, 15, [] (int y, int x) { return y != x * x / 15; });
+    board = Engine::generate(15, 15);
     myColor = Engine::randomColor();
+
+    // black first
+    turn = CH_BLACK;
     isPlaying = true;
 
     sendColors();
