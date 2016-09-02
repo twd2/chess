@@ -27,7 +27,8 @@ signals:
     void message(QJsonObject);
 public slots:
     void onNewConnection();
-    void onClientMessage(QJsonObject);
+    void onClientMessage(JsonSession *, QJsonObject);
+    void onHttpRequest(JsonSession *, QString);
     void onMessage(char who, const QJsonObject &);
 private:
     chess_t myColor = CH_BLACK;

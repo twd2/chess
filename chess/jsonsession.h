@@ -10,7 +10,10 @@
 #include <QJsonObject>
 #include <QDateTime>
 
-#define MAGIC_HEADER "5CHS"
+#define MAGIC_HEADER "GMKU"
+#define HTTP_HEADER_HEAD "HEAD"
+#define HTTP_HEADER_GET "GET "
+#define HTTP_HEADER_POST "POST"
 
 struct package_header
 {
@@ -24,7 +27,8 @@ class JsonSession : public QObject
     enum status_t
     {
         readingHeader,
-        readingData
+        readingData,
+        readingHttpHeader
     };
 
 public:
@@ -36,7 +40,8 @@ public:
     explicit JsonSession(QTcpSocket *sock, QObject *parent = 0);
     ~JsonSession();
 signals:
-    void onMessage(QJsonObject);
+    void onMessage(JsonSession *, QJsonObject);
+    void onHttpRequest(JsonSession *, QString);
 public slots:
     void read();
     void disconnected();
@@ -44,11 +49,15 @@ public slots:
     void close(int wait = 0);
     void send(const QJsonObject &);
     void updateActive();
+    void sendHttpResponse(int code, QString desc);
+    void sendHttpResponse(QString header, QString value);
+    void sendHttpResponse();
 private:
     status_t status = status_t::readingHeader;
     quint64 current_pos = 0;
     quint8 *buffer = nullptr;
     package_header *header = nullptr;
+    QString httpHeader;
 };
 
 #endif // ECHOSESSION_H

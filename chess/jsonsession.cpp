@@ -57,16 +57,39 @@ void JsonSession::read()
                 header = reinterpret_cast<package_header *>(buffer);
                 buffer = nullptr;
                 current_pos = 0;
-                header->length = qFromBigEndian(header->length);
-                qDebug() << header->magic[0] << header->magic[1] << header->magic[2] << header->magic[3] << header->length;
-                if (!(header->magic[0] == MAGIC_HEADER[0] && header->magic[1] == MAGIC_HEADER[1] && header->magic[2] == MAGIC_HEADER[2] && header->magic[3] == MAGIC_HEADER[3])
-                    || header->length == 0 || header->length > maxLength)
+                if (memcmp(header->magic, MAGIC_HEADER, sizeof(header->magic)) == 0)
+                {
+                    header->length = qFromBigEndian(header->length);
+                    qDebug() << "length=" << header->length;
+                    if (header->length == 0 || header->length > maxLength)
+                    {
+                        qDebug() << "data is null or too long";
+                        close();
+                        return;
+                    }
+                    status = status_t::readingData;
+                }
+                else if (memcmp(header->magic, HTTP_HEADER_HEAD, sizeof(header->magic)) == 0
+                         || memcmp(header->magic, HTTP_HEADER_GET, sizeof(header->magic)) == 0
+                         || memcmp(header->magic, HTTP_HEADER_POST, sizeof(header->magic)) == 0)
+                {
+                    qDebug() << "HTTP request";
+                    char *request = reinterpret_cast<char *>(header);
+                    httpHeader.clear();
+                    for (int i = 0; i < sizeof(package_header); ++i)
+                    {
+                        httpHeader += request[i];
+                    }
+                    delete header;
+                    header = nullptr;
+                    status = status_t::readingHttpHeader;
+                }
+                else
                 {
                     qDebug() << "protocol mismatch";
                     close();
                     return;
                 }
-                status = status_t::readingData;
             }
             break;
         }
@@ -86,13 +109,41 @@ void JsonSession::read()
             current_pos += data.count();
             if (current_pos == header->length)
             {
-                emit onMessage(QJsonDocument::fromJson(QByteArray::fromRawData(reinterpret_cast<const char *>(buffer), header->length)).object());
+                emit onMessage(this,
+                               QJsonDocument::fromJson(QByteArray::fromRawData(reinterpret_cast<const char *>(buffer), header->length)).object());
                 delete buffer;
                 delete header;
                 header = nullptr;
                 buffer = nullptr;
                 current_pos = 0;
                 status = status_t::readingHeader;
+            }
+            break;
+        }
+        case status_t::readingHttpHeader:
+        {
+            while (true)
+            {
+                if (httpHeader.length() >= maxLength)
+                {
+                    qDebug() << "http header is too long";
+                    close();
+                    return;
+                }
+                char ch;
+                if (sock->read(&ch, sizeof(ch)) <= 0)
+                {
+                    read = false;
+                    break;
+                }
+                httpHeader += ch;
+                if (httpHeader.endsWith("\r\n\r\n") || httpHeader.endsWith("\n\n"))
+                {
+                    qDebug() << "http request: " << httpHeader;
+                    emit onHttpRequest(this, httpHeader);
+                    status = status_t::readingHeader;
+                    break;
+                }
             }
             break;
         }
@@ -110,19 +161,26 @@ void JsonSession::send(const QJsonObject &obj)
     package_header header;
     strcpy(header.magic, MAGIC_HEADER);
     header.length = qToBigEndian(data.count());
+
+    // assume the buffer would never be full
     sock->write(reinterpret_cast<const char *>(&header), sizeof(package_header));
     sock->write(data);
 }
 
 void JsonSession::close(int wait)
 {
+    if (!running)
+    {
+        return;
+    }
     qDebug() << "closing";
     running = false;
-    if (sock->isWritable())
+    if (sock->isWritable() && sock->state() == QAbstractSocket::SocketState::ConnectedState)
     {
         sock->waitForBytesWritten(wait);
     }
 
+    qDebug() << sock->state();
     sock->close();
 }
 
@@ -135,7 +193,7 @@ void JsonSession::disconnected()
 
     QJsonObject obj;
     obj["type"] = "close";
-    emit onMessage(obj);
+    emit onMessage(this, obj);
 }
 
 void JsonSession::error(QAbstractSocket::SocketError err)
@@ -144,7 +202,7 @@ void JsonSession::error(QAbstractSocket::SocketError err)
     QJsonObject obj;
     obj["type"] = "error";
     obj["data"] = err;
-    emit onMessage(obj);
+    emit onMessage(this, obj);
 }
 
 void JsonSession::updateActive()
@@ -172,4 +230,24 @@ JsonSession::~JsonSession()
         sock->deleteLater();
         sock = nullptr;
     }
+}
+
+// HTTP
+
+void JsonSession::sendHttpResponse(int code, QString desc)
+{
+    QByteArray buffer = QString("HTTP/1.1 %1 %2\r\n").arg(code).arg(desc).toUtf8();
+    sock->write(buffer);
+}
+
+void JsonSession::sendHttpResponse(QString header, QString value)
+{
+    QByteArray buffer = QString("%1: %2\r\n").arg(header).arg(value).toUtf8();
+    sock->write(buffer);
+}
+
+void JsonSession::sendHttpResponse()
+{
+    QByteArray buffer = QString("\r\n").toUtf8();
+    sock->write(buffer);
 }

@@ -9,16 +9,19 @@
 
 Widget::Widget(QWidget *parent) :
     QWidget(parent), ui(new Ui::Widget),
-    discovery(new ServerDiscovery()), discoveryThread(new QThread())
+    ai(new AI()), discovery(new ServerDiscovery()), workerThread(new QThread())
 {
     ui->setupUi(this);
     reset();
-    connect(ui->board, SIGNAL(clicked(int,int)), this, SLOT(boardClicked(int,int)));
+    connect(ui->board, SIGNAL(clicked(int, int)), this, SLOT(boardClicked(int, int)));
 
-    discoveryThread->start();
-    discovery->moveToThread(discoveryThread);
+    workerThread->start();
+    discovery->moveToThread(workerThread);
     connect(this, SIGNAL(startDiscovery()), discovery, SLOT(start()));
     connect(this, SIGNAL(stopDiscovery()), discovery, SLOT(stop()));
+    ai->moveToThread(workerThread);
+    connect(this, SIGNAL(boardChanged(board_t, chess_t, int)), ai, SLOT(boardChanged(board_t, chess_t, int)));
+    connect(ai, SIGNAL(suggest(int, int, int)), this, SLOT(aiSuggest(int, int, int)));
 }
 
 Widget::~Widget()
@@ -41,6 +44,20 @@ void Widget::boardClicked(int row, int col)
     obj["data"] = data;
     setMessage(true, tr("Sending data..."));
     sendToServer(obj);
+}
+
+void Widget::aiSuggest(int row, int col, int rev)
+{
+    if (rev != ui->board->rev())
+    {
+        return;
+    }
+    ui->board->click(row, col);
+}
+
+void Widget::onMessage(JsonSession *, QJsonObject obj)
+{
+    onMessage(obj);
 }
 
 void Widget::onMessage(QJsonObject obj)
@@ -79,12 +96,10 @@ void Widget::onMessage(QJsonObject obj)
             setMessage(false, tr("It's your turn."));
 
             // auto
-            // TODO: multi-thread
             if (ui->btnAuto->isChecked())
             {
-                QPoint p = Engine::findMostDangerous(_board, myColor);
-                qDebug() << p;
-                boardClicked(p.y(), p.x());
+                setMessage(false, tr("AI is thinking..."));
+                emit boardChanged(_board, myColor, ui->board->rev());
             }
         }
         else
@@ -204,8 +219,11 @@ void Widget::connectToServer(QHostAddress address, quint16 port)
     _lastAddress = address;
     _lastPort = port;
     client = new JsonSession(new QTcpSocket(), this);
-    connect(client, SIGNAL(onMessage(QJsonObject)), this, SLOT(onMessage(QJsonObject)));
+    connect(client, SIGNAL(onMessage(JsonSession *, QJsonObject)), this, SLOT(onMessage(JsonSession *, QJsonObject)));
     client->sock->connectToHost(address, port);
+    QJsonObject obj;
+    obj["type"] = "hello";
+    client->send(obj);
 }
 
 void Widget::on_btnClientStop_clicked()

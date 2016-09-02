@@ -1,3 +1,4 @@
+#include "engine.h"
 #include "widget.h"
 
 #include <QApplication>
@@ -9,6 +10,11 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+
+    qRegisterMetaType<chess_t>("chess_t");
+    qRegisterMetaType<chess_t>("chess_t&");
+    qRegisterMetaType<board_t>("board_t");
+    qRegisterMetaType<board_t>("board_t&");
 
     QLocale locale;
     qDebug() << locale.name().toLower();

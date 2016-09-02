@@ -34,13 +34,14 @@ void ChessServer::onNewConnection()
             return;
         }
         peer = new JsonSession(sock, this);
-        connect(peer, SIGNAL(onMessage(QJsonObject)), this, SLOT(onClientMessage(QJsonObject)));
+        connect(peer, SIGNAL(onMessage(JsonSession *, QJsonObject)), this, SLOT(onClientMessage(JsonSession *, QJsonObject)));
+        connect(peer, SIGNAL(onHttpRequest(JsonSession*, QString)), this, SLOT(onHttpRequest(JsonSession*, QString)));
 
         startGame();
     }
 }
 
-void ChessServer::onClientMessage(QJsonObject obj)
+void ChessServer::onClientMessage(JsonSession *, QJsonObject obj)
 {
     // TODO: multi-color support
     onMessage(Engine::nextColor(myColor), obj);
@@ -89,6 +90,7 @@ void ChessServer::onMessage(chess_t who, const QJsonObject &obj)
     }
     else if (type == "close")
     {
+        isPlaying = false;
         if (who != myColor)
         {
             // peer disconnected
@@ -103,6 +105,7 @@ void ChessServer::onMessage(chess_t who, const QJsonObject &obj)
     }
     else if (type == "error")
     {
+        isPlaying = false;
         if (who != myColor)
         {
             // peer error
@@ -117,7 +120,7 @@ void ChessServer::onMessage(chess_t who, const QJsonObject &obj)
     }
     else if (type == "new")
     {
-        if (isPlaying)
+        if (isPlaying || !peer)
         {
             // reject
             return;
@@ -129,9 +132,9 @@ void ChessServer::onMessage(chess_t who, const QJsonObject &obj)
 void ChessServer::startGame()
 {
     // "hello"s
-    QJsonObject objHello;
-    objHello["type"] = "hello";
-    sendBoth(objHello);
+    QJsonObject obj;
+    obj["type"] = "hello";
+    sendBoth(obj);
 
     // setup
     board = Engine::generate(15, 15);
@@ -220,4 +223,18 @@ bool ChessServer::place(chess_t color, int row, int col)
 ChessServer::~ChessServer()
 {
     close();
+}
+
+// HTTP
+
+void ChessServer::onHttpRequest(JsonSession *sess, QString header)
+{
+    sess->sendHttpResponse(200, "ok");
+    sess->sendHttpResponse("Server", "GMKU/0.1");
+    sess->sendHttpResponse("Connection", "close");
+    sess->sendHttpResponse();
+    sess->sock->write(header.toUtf8());
+    sess->deleteLater();
+    sess = nullptr;
+    // sess->close();
 }

@@ -8,10 +8,13 @@
 #include <QJsonArray>
 #include <QPoint>
 #include <QVector>
+#include <QMetaType>
 
 typedef char chess_t;
 typedef QVector<chess_t> board_row_t;
 typedef QVector<board_row_t> board_t;
+Q_DECLARE_METATYPE(chess_t)
+Q_DECLARE_METATYPE(board_t)
 
 constexpr chess_t CH_BLACK = 'B';
 constexpr chess_t CH_WHITE = 'W';

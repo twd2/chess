@@ -122,12 +122,9 @@ void Board::mousePressEvent(QMouseEvent *e)
         for (int col = 0; col < colCount; ++col)
         {
             QRect rect(col * doubleRadius + boarder, row * doubleRadius + boarder, doubleRadius - boarder * 2, doubleRadius - boarder * 2);
-            if (rect.contains(e->pos()) && !Engine::isBlock(_board, row, col))
+            if (rect.contains(e->pos()))
             {
-                // local render
-                _board[row][col] = myColor;
-                update();
-                emit clicked(row, col);
+                click(row, col);
                 return;
             }
         }
@@ -170,8 +167,33 @@ bool Board::hint() const
     return _hint;
 }
 
+int Board::rev() const
+{
+    return _rev;
+}
+
 void Board::setHint(bool hint)
 {
     _hint = hint;
     update();
+}
+
+void Board::click(int row, int col)
+{
+    if (_lock)
+    {
+        return;
+    }
+    if (_board.count() == 0 || _board[0].count() == 0)
+    {
+        return;
+    }
+    if (!Engine::isBlock(_board, row, col))
+    {
+        // local render
+        _board[row][col] = myColor;
+        ++_rev;
+        update();
+        emit clicked(row, col);
+    }
 }

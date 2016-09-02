@@ -22,6 +22,7 @@ protected:
     bool _lock = false;
     QString lockText = "";
     int lastRow = -1, lastCol = -1;
+    int _rev = 0;
     bool _hint = true;
 public:
     chess_t myColor = CH_WHITE;
@@ -31,6 +32,7 @@ public:
     board_t board() const;
     bool lock() const;
     bool hint() const;
+    int rev() const;
 signals:
     void clicked(int row, int col);
 public slots:
@@ -38,7 +40,7 @@ public slots:
     void setLock(bool, const QString &lockText = "");
     void setLast(int row, int col);
     void setHint(bool);
-
+    void click(int row, int col);
 
 };
 

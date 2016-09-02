@@ -435,11 +435,11 @@ bool Engine::isBlock(const board_t &vec, int row, int col)
 
 QPoint Engine::findMostDangerous(const board_t &vec, chess_t self)
 {
-    chess_t enemy = nextColor(self);
+    chess_t enemy = self;
     // TODO
     int maxScore = 0;
     QPoint p(0, 0);
-    while (enemy != self)
+    do
     {
         for (int row = 0; row < vec.count(); ++row)
         {
@@ -453,11 +453,15 @@ QPoint Engine::findMostDangerous(const board_t &vec, chess_t self)
                 auto newVec = vec;
                 newVec[row][col] = enemy;
                 int score = (findWin(newVec) == enemy) * 5
-                            + (findWin(newVec) == self) * 10
                             + findDangerous1(newVec, enemy)
                             + findDangerous2(newVec, enemy)
                             + findDangerous3(newVec, enemy)
                             + countDangerous(newVec, enemy);
+                if (enemy == self)
+                {
+                    // win first
+                    score *= 2;
+                }
                 if (score > maxScore)
                 {
                     maxScore = score;
@@ -466,20 +470,24 @@ QPoint Engine::findMostDangerous(const board_t &vec, chess_t self)
             }
         }
         enemy = nextColor(enemy);
-    }
+    } while (enemy != self);
     if (maxScore == 0)
     {
+        QVector<QPoint> vp;
         for (int row = 0; row < vec.count(); ++row)
         {
-            const auto &rowVec = vec[row];
+            auto &rowVec = vec[row];
             for (int col = 0; col < rowVec.count(); ++col)
             {
-                if (!isBlock(vec, row, col))
+                if (isBlock(vec, row, col))
                 {
-                    p = QPoint(col, row);
+                    continue;
                 }
+                vp.append(QPoint(col, row));
             }
         }
+        std::uniform_int_distribution<int> dist(0, vp.count() - 1);
+        p = vp[dist(gen)];
     }
     return p;
 }
