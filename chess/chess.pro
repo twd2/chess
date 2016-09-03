@@ -22,7 +22,8 @@ SOURCES += main.cpp\
     chessserver.cpp \
     serverdiscovery.cpp \
     discoverylist.cpp \
-    ai.cpp
+    ai.cpp \
+    session.cpp
 
 HEADERS  += widget.h \
     setendpoint.h \
@@ -33,7 +34,8 @@ HEADERS  += widget.h \
     chessserver.h \
     serverdiscovery.h \
     discoverylist.h \
-    ai.h
+    ai.h \
+    session.h
 
 FORMS    += widget.ui \
     setendpoint.ui \

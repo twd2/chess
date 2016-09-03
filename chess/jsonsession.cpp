@@ -4,11 +4,17 @@
 #include <QJsonObject>
 #include <QtEndian>
 
+constexpr int JsonSession::heartbeatInterval;
 constexpr size_t JsonSession::maxLength;
 constexpr size_t JsonSession::bufferSize;
 
+QDateTime JsonSession::lastActive() const
+{
+    return _lastActive;
+}
+
 JsonSession::JsonSession(QTcpSocket *sock, QObject *parent)
-    : QObject(parent), sock(sock), lastActive(QDateTime::currentDateTimeUtc())
+    : QObject(parent), sock(sock), _lastActive(QDateTime::currentDateTimeUtc())
 {
     sock->setParent(this);
     updateActive();
@@ -63,13 +69,26 @@ void JsonSession::read()
                 {
                     header->length = qFromBigEndian(header->length);
                     qDebug() << "length=" << header->length;
-                    if (header->length == 0 || header->length > maxLength)
+                    if (header->length > maxLength)
                     {
-                        qDebug() << "data is null or too long";
+                        qDebug() << "data is too long";
                         close();
                         return;
                     }
-                    status = status_t::readingData;
+
+                    if (header->length == 0)
+                    {
+                        delete header;
+                        header = nullptr;
+
+                        QJsonObject obj;
+                        obj["type"] = "null";
+                        emit onMessage(this, obj);
+                    }
+                    else
+                    {
+                        status = status_t::readingData;
+                    }
                 }
                 else if (memcmp(header->magic, HTTP_HEADER_HEAD, sizeof(header->magic)) == 0
                          || memcmp(header->magic, HTTP_HEADER_GET, sizeof(header->magic)) == 0
@@ -113,9 +132,9 @@ void JsonSession::read()
             {
                 emit onMessage(this,
                                QJsonDocument::fromJson(QByteArray::fromRawData(reinterpret_cast<const char *>(buffer), header->length)).object());
-                delete buffer;
                 delete header;
                 header = nullptr;
+                delete [] buffer;
                 buffer = nullptr;
                 current_pos = 0;
                 status = status_t::readingHeader;
@@ -124,28 +143,27 @@ void JsonSession::read()
         }
         case status_t::readingHttpHeader:
         {
-            while (true)
+            QByteArray data = sock->peek(bufferSize);
+            if (data.count() == 0)
             {
-                if (httpHeader.length() >= maxLength)
-                {
-                    qDebug() << "http header is too long";
-                    close();
-                    return;
-                }
-                char ch;
-                if (sock->read(&ch, sizeof(ch)) <= 0)
-                {
-                    read = false;
-                    break;
-                }
-                httpHeader += ch;
-                if (httpHeader.endsWith("\r\n\r\n") || httpHeader.endsWith("\n\n"))
-                {
-                    qDebug() << "http request: " << httpHeader;
-                    emit onHttpRequest(this, httpHeader);
-                    status = status_t::readingHeader;
-                    break;
-                }
+                read = false;
+                continue;
+            }
+            const QByteArray endHeader("\r\n\r\n");
+            int index = data.indexOf(endHeader);
+            if (index == -1)
+            {
+                httpHeader += data;
+                sock->read(data.count());
+            }
+            else
+            {
+                // endHeader found
+                httpHeader += data.mid(0, index + endHeader.count());
+                sock->read(index + endHeader.count());
+                qDebug() << "http request: " << httpHeader;
+                emit onHttpRequest(this, httpHeader);
+                status = status_t::readingHeader;
             }
             break;
         }
@@ -161,12 +179,22 @@ void JsonSession::send(const QJsonObject &obj)
 {
     QByteArray data = QJsonDocument(obj).toJson(QJsonDocument::Compact);
     package_header header;
-    strcpy(header.magic, MAGIC_HEADER);
+    memcpy(header.magic, MAGIC_HEADER, sizeof(header.magic));
     header.length = qToBigEndian(data.count());
 
     // assume the buffer would never be full
     sock->write(reinterpret_cast<const char *>(&header), sizeof(package_header));
     sock->write(data);
+}
+
+void JsonSession::send()
+{
+    package_header header;
+    memcpy(header.magic, MAGIC_HEADER, sizeof(header.magic));
+    header.length = qToBigEndian(0);
+
+    // assume the buffer would never be full
+    sock->write(reinterpret_cast<const char *>(&header), sizeof(package_header));
 }
 
 void JsonSession::close(int wait)
@@ -175,10 +203,14 @@ void JsonSession::close(int wait)
     {
         return;
     }
+
     qDebug() << "closing";
     running = false;
-    if (sock->isWritable() && sock->state() == QAbstractSocket::SocketState::ConnectedState)
+    stopHeartbeat();
+
+    if (wait != 0 && sock->isWritable() && sock->state() == QAbstractSocket::ConnectedState)
     {
+        // WOULD BLOCK!
         sock->waitForBytesWritten(wait);
     }
 
@@ -219,11 +251,13 @@ void JsonSession::error(QAbstractSocket::SocketError err)
 
 void JsonSession::updateActive()
 {
-    lastActive = QDateTime::currentDateTimeUtc();
+    _lastActive = QDateTime::currentDateTimeUtc();
 }
 
 JsonSession::~JsonSession()
 {
+    stopHeartbeat();
+
     if (buffer)
     {
         delete buffer;
@@ -241,6 +275,29 @@ JsonSession::~JsonSession()
         close();
         sock->deleteLater();
         sock = nullptr;
+    }
+}
+
+void JsonSession::timerEvent(QTimerEvent *)
+{
+    if (running && sock && sock->state() == QAbstractSocket::ConnectedState)
+    {
+        send();
+    }
+}
+
+void JsonSession::startHeartbeat(int interval)
+{
+    stopHeartbeat();
+    timerId = startTimer(interval);
+}
+
+void JsonSession::stopHeartbeat()
+{
+    if (timerId > 0)
+    {
+        killTimer(timerId);
+        timerId = 0;
     }
 }
 

@@ -27,7 +27,6 @@ public:
     ~Widget();
 
 private slots:
-    void on_btnTestLock_clicked();
     void boardClicked(int row, int col);
     void aiSuggest(int, int, int);
     void onMessage(QJsonObject);

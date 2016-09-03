@@ -1,6 +1,9 @@
 #include "chessserver.h"
 
 #include <QTcpSocket>
+#include <QDateTime>
+
+constexpr int ChessServer::timeoutInterval;
 
 ChessServer::ChessServer(QHostAddress address, quint16 port, QObject *parent)
     : QObject(parent), address(address), port(port)
@@ -12,9 +15,13 @@ bool ChessServer::start()
 {
     close();
     listener = new QTcpServer(this);
-    bool succeeded = listener->listen(address, port);
+    if (!listener->listen(address, port))
+    {
+        return false;
+    }
     connect(listener, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
-    return succeeded;
+    startCheckAlive();
+    return true;
 }
 
 void ChessServer::onNewConnection()
@@ -41,6 +48,20 @@ void ChessServer::onNewConnection()
     }
 }
 
+void ChessServer::removeSession(JsonSession *sess, bool wait)
+{
+    if (!wait)
+    {
+        sess->close();
+    }
+    sess->deleteLater();
+    sessions.remove(sess);
+    if (sess == peer)
+    {
+        peer = nullptr;
+    }
+}
+
 void ChessServer::onClientMessage(JsonSession *, QJsonObject obj)
 {
     // TODO: multi-color support
@@ -52,32 +73,50 @@ void ChessServer::command(const QJsonObject &obj)
     onMessage(myColor, obj);
 }
 
-void ChessServer::onMessage(chess_t who, const QJsonObject &obj)
+void ChessServer::timerEvent(QTimerEvent *)
+{
+    qDebug() << "checking who is timed out...";
+    QList<JsonSession *> sessionPointers = sessions.keys();
+    for (JsonSession *sess : sessionPointers)
+    {
+        if (sess->lastActive().msecsTo(QDateTime::currentDateTimeUtc()) >= timeoutInterval)
+        {
+            removeSession(sess);
+        }
+    }
+}
+
+void ChessServer::onMessage(chess_t color, const QJsonObject &obj)
 {
     QString type = obj["type"].toString();
-    qDebug() << "server on message" << who << obj;
-    if (type == "hello")
+    qDebug() << "server on message" << color << obj;
+    if (type == "null")
+    {
+        // heartbeat
+    }
+    else if (type == "hello")
     {
         // nothing to do
     }
     else if (type == "place")
     {
-        if (!isPlaying || turn != who)
+        if (!isPlaying || turn != color)
         {
             // reject
             return;
         }
+        // next turn
+        turn = Engine::nextColor(turn);
+
         QJsonObject data = obj["data"].toObject();
         int row = data["row"].toInt(),
             col = data["col"].toInt();
-        if (!place(who, row, col))
+        if (!place(color, row, col))
         {
             // reject
             return;
         }
 
-        // next turn
-        turn = Engine::nextColor(turn);
         sendBoardBoth(row, col, true);
 
         // check win
@@ -91,7 +130,7 @@ void ChessServer::onMessage(chess_t who, const QJsonObject &obj)
     else if (type == "close")
     {
         isPlaying = false;
-        if (who != myColor)
+        if (color != myColor)
         {
             // peer disconnected
             peer->deleteLater();
@@ -106,7 +145,7 @@ void ChessServer::onMessage(chess_t who, const QJsonObject &obj)
     else if (type == "error")
     {
         isPlaying = false;
-        if (who != myColor)
+        if (color != myColor)
         {
             // peer error
             peer->deleteLater();
@@ -150,6 +189,14 @@ void ChessServer::startGame()
 
 void ChessServer::close()
 {
+    stopCheckAlive();
+
+    QList<JsonSession *> sessionPointers = sessions.keys();
+    for (JsonSession *sess : sessionPointers)
+    {
+        removeSession(sess);
+    }
+
     if (listener)
     {
         listener->close();
@@ -225,16 +272,62 @@ ChessServer::~ChessServer()
     close();
 }
 
+void ChessServer::startCheckAlive(int interval)
+{
+    stopCheckAlive();
+    timerId = startTimer(interval);
+}
+
+void ChessServer::stopCheckAlive()
+{
+    if (timerId > 0)
+    {
+        killTimer(timerId);
+        timerId = 0;
+    }
+}
+
 // HTTP
 
 void ChessServer::onHttpRequest(JsonSession *sess, QString header)
 {
-    sess->sendHttpResponse(200, "ok");
+    if (sess == peer)
+    {
+        // return;
+    }
+    QStringList headers = header.split("\r\n", QString::SkipEmptyParts);
+    if (headers.count() < 1)
+    {
+        sess->close();
+        sess->deleteLater();
+        sess = nullptr;
+    }
+    QStringList methodAndPathAndVersion = headers.first().split(" ");
+    if (methodAndPathAndVersion.count() != 3)
+    {
+        QByteArray data = QString("<h1>Bad Request</h1>").toUtf8();
+        sess->sendHttpResponse(400, "Bad Request");
+        sess->sendHttpResponse("Server", "GMKU/0.1");
+        sess->sendHttpResponse("Content-Length", QString::number(data.count()));
+        sess->sendHttpResponse("Connection", "Close");
+        sess->sendHttpResponse();
+        sess->sock->write(data);
+        removeSession(sess, true);
+        return;
+    }
+
+    QString method = methodAndPathAndVersion[0],
+            path = methodAndPathAndVersion[1],
+            version = methodAndPathAndVersion[2];
+
+    qDebug() << method << path << version;
+
+    QByteArray data = QString("<h1>It works!</h1>").toUtf8();
+    sess->sendHttpResponse(200, "OK");
     sess->sendHttpResponse("Server", "GMKU/0.1");
-    sess->sendHttpResponse("Connection", "close");
+    sess->sendHttpResponse("Content-Length", QString::number(data.count()));
+    sess->sendHttpResponse("Connection", "Keep-Alive");
     sess->sendHttpResponse();
-    sess->sock->write(header.toUtf8());
-    sess->deleteLater();
-    sess = nullptr;
-    // sess->close();
+    sess->sock->write(data);
+    // removeSession(sess, true);
 }

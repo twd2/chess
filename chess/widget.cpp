@@ -41,11 +41,6 @@ Widget::~Widget()
     delete ui;
 }
 
-void Widget::on_btnTestLock_clicked()
-{
-    setMessage(!ui->board->lock(), "Hello");
-}
-
 void Widget::boardClicked(int row, int col)
 {
     QJsonObject obj;
@@ -82,6 +77,10 @@ void Widget::onMessage(QJsonObject obj)
         QJsonObject obj;
         obj["type"] = "hello";
         sendToServer(obj);
+        if (client)
+        {
+            client->startHeartbeat();
+        }
     }
     else if (type == "hello")
     {
@@ -120,6 +119,10 @@ void Widget::onMessage(QJsonObject obj)
                 setMessage(false, tr("AI is thinking..."));
                 emit boardChanged(_board, myColor, ui->board->rev());
             }
+        }
+        else if (myColor == CH_VIEWER)
+        {
+            setMessage(true, tr("Waiting for %1...").arg(Engine::name(turn)));
         }
         else
         {
