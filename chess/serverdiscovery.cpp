@@ -50,6 +50,7 @@ void ServerDiscovery::start()
     {
         connect(timer, SIGNAL(timeout()), this, SLOT(onTimer()));
         timer->start(1000);
+        onTimer();
     }
 }
 
@@ -164,8 +165,18 @@ void ServerDiscovery::clientOnDatagram()
     {
         return;
     }
+
     qDebug() << list[1].trimmed() << list[2].trimmed().toInt();
-    emit serverFound(list[1].trimmed(), list[2].trimmed().remove(".").toInt());
+    QString serverAddress;
+    if (list[1].trimmed() != "-")
+    {
+        serverAddress = list[1].trimmed();
+    }
+    else
+    {
+        serverAddress = address.toString();
+    }
+    emit serverFound(serverAddress, list[2].trimmed().remove(".").toInt());
 }
 
 void ServerDiscovery::serverOnDatagram()
@@ -185,6 +196,16 @@ void ServerDiscovery::serverOnDatagram()
         return;
     }
 
-    buffer = QString("Here I am, %1, %2.").arg(_serverAddress.toString()).arg(_serverPort).toUtf8();
+    QString addressStr;
+    if (!_serverAddress.isNull())
+    {
+        addressStr = _serverAddress.toString();
+    }
+    else
+    {
+        addressStr = "-";
+    }
+
+    buffer = QString("Here I am, %1, %2.").arg(addressStr).arg(_serverPort).toUtf8();
     qDebug() << sock->writeDatagram(buffer, address, port);
 }

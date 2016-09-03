@@ -12,6 +12,18 @@ Widget::Widget(QWidget *parent) :
     ai(new AI()), discovery(new ServerDiscovery()), workerThread(new QThread())
 {
     ui->setupUi(this);
+
+#ifdef CLIENT_ONLY
+    ui->gServer->hide();
+    ui->labAddress->hide();
+    setWindowTitle(tr("Chess - Client"));
+#endif
+
+#ifdef SERVER_ONLY
+    ui->gClient->hide();
+    setWindowTitle(tr("Chess - Host"));
+#endif
+
     reset();
     connect(ui->board, SIGNAL(clicked(int, int)), this, SLOT(boardClicked(int, int)));
 
@@ -64,7 +76,14 @@ void Widget::onMessage(QJsonObject obj)
 {
     QString type = obj["type"].toString();
     qDebug() << "widget on message" << obj;
-    if (type == "hello")
+    if (type == "connect")
+    {
+        // connected
+        QJsonObject obj;
+        obj["type"] = "hello";
+        sendToServer(obj);
+    }
+    else if (type == "hello")
     {
         // connected
         setMessage(true, tr("Waiting for start..."));
@@ -149,8 +168,9 @@ void Widget::onMessage(QJsonObject obj)
             // server mode
             resetBoard();
         }
-        int errorCode = obj["data"].toInt();
-        QMessageBox::warning(this, tr("Error"), tr("Connection error: %1").arg(errorCode));
+        QJsonObject data = obj["data"].toObject();
+        // auto errorCode = static_cast<QAbstractSocket::SocketError>(data["code"].toInt());
+        QMessageBox::warning(this, tr("Error"), tr("Connection error: %1").arg(data["message"].toString()));
     }
 }
 
@@ -221,9 +241,6 @@ void Widget::connectToServer(QHostAddress address, quint16 port)
     client = new JsonSession(new QTcpSocket(), this);
     connect(client, SIGNAL(onMessage(JsonSession *, QJsonObject)), this, SLOT(onMessage(JsonSession *, QJsonObject)));
     client->sock->connectToHost(address, port);
-    QJsonObject obj;
-    obj["type"] = "hello";
-    client->send(obj);
 }
 
 void Widget::on_btnClientStop_clicked()
@@ -314,7 +331,14 @@ void Widget::on_btnListen_clicked()
     }
 
     discovery->isServer = true;
-    discovery->setServerListenAddress(myAddress);
+    if (se.address == QHostAddress::Any)
+    {
+        discovery->setServerListenAddress(QHostAddress::Null);
+    }
+    else
+    {
+        discovery->setServerListenAddress(myAddress);
+    }
     discovery->setServerPort(se.port);
     emit startDiscovery();
     ui->btnListen->setEnabled(false);

@@ -32,8 +32,8 @@ class JsonSession : public QObject
     };
 
 public:
-    static constexpr quint32 maxLength = 10240;
-    static constexpr quint32 bufferSize = 4096;
+    static constexpr size_t maxLength = 10240;
+    static constexpr size_t bufferSize = 4096;
     QTcpSocket *sock;
     bool running = true;
     QDateTime lastActive;
@@ -43,6 +43,7 @@ signals:
     void onMessage(JsonSession *, QJsonObject);
     void onHttpRequest(JsonSession *, QString);
 public slots:
+    void connected();
     void read();
     void disconnected();
     void error(QAbstractSocket::SocketError);

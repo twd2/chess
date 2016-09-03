@@ -4,21 +4,23 @@
 #include <QJsonObject>
 #include <QtEndian>
 
-constexpr quint32 JsonSession::maxLength;
-constexpr quint32 JsonSession::bufferSize;
+constexpr size_t JsonSession::maxLength;
+constexpr size_t JsonSession::bufferSize;
 
 JsonSession::JsonSession(QTcpSocket *sock, QObject *parent)
     : QObject(parent), sock(sock), lastActive(QDateTime::currentDateTimeUtc())
 {
     sock->setParent(this);
     updateActive();
+    connect(sock, SIGNAL(connected()), this, SLOT(connected()));
     connect(sock, SIGNAL(readyRead()), this, SLOT(read()));
     connect(sock, SIGNAL(disconnected()), this, SLOT(disconnected()));
     connect(sock, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(error(QAbstractSocket::SocketError)));
     // echo test: connect(this, SIGNAL(onMessage(QJsonObject)), this, SLOT(send(QJsonObject)));
 }
 
-inline quint32 min(const quint32 &a, const quint32 &b)
+template <typename T>
+constexpr inline T min(const T &a, const T &b)
 {
     return a < b ? a : b;
 }
@@ -184,6 +186,13 @@ void JsonSession::close(int wait)
     sock->close();
 }
 
+void JsonSession::connected()
+{
+    QJsonObject obj;
+    obj["type"] = "connect";
+    emit onMessage(this, obj);
+}
+
 void JsonSession::disconnected()
 {
     qDebug() << "disconnected";
@@ -201,7 +210,10 @@ void JsonSession::error(QAbstractSocket::SocketError err)
     qDebug() << "error" << err;
     QJsonObject obj;
     obj["type"] = "error";
-    obj["data"] = err;
+    QJsonObject data;
+    data["code"] = err;
+    data["message"] = sock->errorString();
+    obj["data"] = data;
     emit onMessage(this, obj);
 }
 

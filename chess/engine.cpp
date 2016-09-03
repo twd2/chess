@@ -436,7 +436,6 @@ bool Engine::isBlock(const board_t &vec, int row, int col)
 QPoint Engine::findMostDangerous(const board_t &vec, chess_t self)
 {
     chess_t enemy = self;
-    // TODO
     int maxScore = 0;
     QPoint p(0, 0);
     do
@@ -452,10 +451,10 @@ QPoint Engine::findMostDangerous(const board_t &vec, chess_t self)
                 }
                 auto newVec = vec;
                 newVec[row][col] = enemy;
-                int score = (findWin(newVec) == enemy) * 5
+                int score = (findWin(newVec) == enemy) * 50
                             + findDangerous1(newVec, enemy)
                             + findDangerous2(newVec, enemy)
-                            + findDangerous3(newVec, enemy)
+                            + findDangerous3(newVec, enemy) * 2
                             + countDangerous(newVec, enemy);
                 if (enemy == self)
                 {
@@ -474,6 +473,7 @@ QPoint Engine::findMostDangerous(const board_t &vec, chess_t self)
     if (maxScore == 0)
     {
         QVector<QPoint> vp;
+        int minDistance = vec.count() * vec.count() / 4 + 1;
         for (int row = 0; row < vec.count(); ++row)
         {
             auto &rowVec = vec[row];
@@ -483,11 +483,38 @@ QPoint Engine::findMostDangerous(const board_t &vec, chess_t self)
                 {
                     continue;
                 }
-                vp.append(QPoint(col, row));
+                if ((row + 1 < vec.count() && col < vec[row + 1].count()
+                     && isColor(vec[row + 1][col]) && vec[row + 1][col] != self)
+                    || (row - 1 >= 0 && col < vec[row - 1].count()
+                        && isColor(vec[row - 1][col]) && vec[row - 1][col] != self)
+                    || (col + 1 < vec[row].count()
+                        && isColor(vec[row][col + 1]) && vec[row][col + 1] != self)
+                    || (col - 1 >= 0
+                        && isColor(vec[row][col - 1]) && vec[row][col - 1] != self)
+                    || (row + 1 < vec.count() && col + 1 < vec[row + 1].count()
+                        && isColor(vec[row + 1][col + 1]) && vec[row + 1][col + 1] != self)
+                    || (row + 1 < vec.count() && col - 1 >= 0 && col - 1 < vec[row + 1].count()
+                        && isColor(vec[row + 1][col - 1]) && vec[row + 1][col - 1] != self)
+                    || (row - 1 >= 0 && col + 1 < vec[row - 1].count()
+                        && isColor(vec[row - 1][col + 1]) && vec[row - 1][col + 1] != self)
+                    || (row - 1 >= 0 && col - 1 >= 0 && col - 1 < vec[row - 1].count()
+                        && isColor(vec[row - 1][col - 1]) && vec[row - 1][col - 1] != self))
+                {
+                    vp.append(QPoint(col, row));
+                }
+                int distance = (row - vec.count() / 2) * (row - vec.count() / 2) + (col - rowVec.count() / 2) * (col - rowVec.count() / 2);
+                if (distance < minDistance)
+                {
+                    p = QPoint(col, row);
+                    minDistance = distance;
+                }
             }
         }
-        std::uniform_int_distribution<int> dist(0, vp.count() - 1);
-        p = vp[dist(gen)];
+        if (vp.count() > 0)
+        {
+            std::uniform_int_distribution<int> dist(0, vp.count() - 1);
+            p = vp[dist(gen)];
+        }
     }
     return p;
 }

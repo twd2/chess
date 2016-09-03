@@ -28,7 +28,7 @@ public slots:
     void setServerListenAddress(QHostAddress);
     void setServerPort(quint16);
 private:
-    QHostAddress _serverAddress;
+    QHostAddress _serverAddress = QHostAddress::Null;
     quint16 _serverPort;
     QUdpSocket *sock = nullptr;
     QTimer *timer = nullptr;

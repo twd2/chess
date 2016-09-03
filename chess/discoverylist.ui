@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>476</width>
     <height>300</height>
    </rect>
   </property>
@@ -16,6 +16,13 @@
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Searching for hosts on your local network...</string>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QPushButton" name="btnRefresh">
        <property name="text">

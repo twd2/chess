@@ -11,6 +11,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = chess
 TEMPLATE = app
 
+# DEFINES += SERVER_ONLY=1
 
 SOURCES += main.cpp\
         widget.cpp \
@@ -45,3 +46,4 @@ TRANSLATIONS += zh_CN.ts
 
 DISTFILES += \
     zh_CN.ts
+
