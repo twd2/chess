@@ -303,13 +303,13 @@ void JsonSession::stopHeartbeat()
 
 // HTTP
 
-void JsonSession::sendHttpResponse(int code, QString desc)
+void JsonSession::sendHttpResponse(int code, const QString &desc)
 {
     QByteArray buffer = QString("HTTP/1.1 %1 %2\r\n").arg(code).arg(desc).toUtf8();
     sock->write(buffer);
 }
 
-void JsonSession::sendHttpResponse(QString header, QString value)
+void JsonSession::sendHttpResponse(const QString &header, const QString &value)
 {
     QByteArray buffer = QString("%1: %2\r\n").arg(header).arg(value).toUtf8();
     sock->write(buffer);
@@ -319,4 +319,14 @@ void JsonSession::sendHttpResponse()
 {
     QByteArray buffer = QString("\r\n").toUtf8();
     sock->write(buffer);
+}
+
+void JsonSession::sendHttpResponse(int code, const QString &desc, const QByteArray &data)
+{
+    sendHttpResponse(code, desc);
+    sendHttpResponse("Server", "GMKU/0.1");
+    sendHttpResponse("Content-Length", QString::number(data.count()));
+    sendHttpResponse("Connection", "Keep-Alive");
+    sendHttpResponse();
+    sock->write(data);
 }

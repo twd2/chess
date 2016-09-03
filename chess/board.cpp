@@ -58,7 +58,7 @@ void Board::paintEvent(QPaintEvent *)
                 }
                 else
                 {
-                    if (_hint)
+                    if (Engine::isColor(myColor) && _hint)
                     {
                         bool dangerous = false;
                         chess_t color = Engine::nextColor(myColor);

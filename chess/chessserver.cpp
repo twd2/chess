@@ -1,5 +1,6 @@
 #include "chessserver.h"
 
+#include <QFile>
 #include <QTcpSocket>
 #include <QDateTime>
 
@@ -27,25 +28,10 @@ bool ChessServer::start()
 void ChessServer::onNewConnection()
 {
     QTcpSocket *sock = listener->nextPendingConnection();
-    if (peer || !grantFunc(sock->peerAddress(), sock->peerPort()))
-    {
-        sock->close();
-        delete sock;
-    }
-    else
-    {
-        if (peer)
-        {
-            sock->close();
-            delete sock;
-            return;
-        }
-        peer = new JsonSession(sock, this);
-        connect(peer, SIGNAL(onMessage(JsonSession *, QJsonObject)), this, SLOT(onClientMessage(JsonSession *, QJsonObject)));
-        connect(peer, SIGNAL(onHttpRequest(JsonSession*, QString)), this, SLOT(onHttpRequest(JsonSession*, QString)));
-
-        startGame();
-    }
+    JsonSession *sess = new JsonSession(sock, this);
+    connect(sess, SIGNAL(onMessage(JsonSession *, QJsonObject)), this, SLOT(onClientMessage(JsonSession *, QJsonObject)));
+    connect(sess, SIGNAL(onHttpRequest(JsonSession*, QString)), this, SLOT(onHttpRequest(JsonSession*, QString)));
+    sessions.insert(sess, Session());
 }
 
 void ChessServer::removeSession(JsonSession *sess, bool wait)
@@ -62,14 +48,91 @@ void ChessServer::removeSession(JsonSession *sess, bool wait)
     }
 }
 
-void ChessServer::onClientMessage(JsonSession *, QJsonObject obj)
+void ChessServer::onClientMessage(JsonSession *sess, QJsonObject obj)
 {
-    // TODO: multi-color support
-    onMessage(Engine::nextColor(myColor), obj);
+    bool isPeer = sess == peer;
+    QString type = obj["type"].toString();
+    qDebug() << "server on message" << sess << obj;
+    // universal messages
+    if (type == "null")
+    {
+        // heartbeat
+        sess->updateActive();
+    }
+    else if (type == "join")
+    {
+        // hello
+        QJsonObject obj;
+        obj["type"] = "hello";
+        sess->send(obj);
+        sessions[sess].joined = true;
+
+        bool isViewer = false;
+
+        if (peer || !grantFunc(sess->sock->peerAddress(), sess->sock->peerPort()))
+        {
+            isViewer = true;
+        }
+        else
+        {
+            if (peer)
+            {
+                isViewer = true;
+            }
+            else
+            {
+                peer = sess;
+                sessions[sess].isPeer = true;
+                startGame();
+            }
+        }
+        if (isViewer)
+        {
+            QJsonObject obj;
+            obj["type"] = "color";
+            obj["data"] = Engine::toJson(CH_VIEWER);
+            sess->send(obj);
+
+            if (isPlaying)
+            {
+                // viewer
+                sendBoard(sess);
+            }
+        }
+    }
+    else if (type == "hello")
+    {
+        // nothing to do
+    }
+    else if (type == "close" || type == "error")
+    {
+        // session disconnected/error
+        removeSession(sess);
+
+        if (isPeer)
+        {
+            isPlaying = false;
+            emit message(obj);
+        }
+    }
+    else
+    {
+        // game-related messages
+
+        if (isPeer)
+        {
+            onMessage(sessions[sess].color, obj);
+        }
+        else
+        {
+            // reject
+        }
+    }
 }
 
 void ChessServer::command(const QJsonObject &obj)
 {
+    // game-related messages
     onMessage(myColor, obj);
 }
 
@@ -88,17 +151,9 @@ void ChessServer::timerEvent(QTimerEvent *)
 
 void ChessServer::onMessage(chess_t color, const QJsonObject &obj)
 {
+    // game-related messages
     QString type = obj["type"].toString();
-    qDebug() << "server on message" << color << obj;
-    if (type == "null")
-    {
-        // heartbeat
-    }
-    else if (type == "hello")
-    {
-        // nothing to do
-    }
-    else if (type == "place")
+    if (type == "place")
     {
         if (!isPlaying || turn != color)
         {
@@ -117,44 +172,17 @@ void ChessServer::onMessage(chess_t color, const QJsonObject &obj)
             return;
         }
 
-        sendBoardBoth(row, col, true);
+        lastRow = row;
+        lastCol = col;
+
+        broadcastBoard(true);
 
         // check win
         chess_t win = Engine::findWin(board);
         if (win != CH_SPACE)
         {
             isPlaying = false;
-            sendWin(win);
-        }
-    }
-    else if (type == "close")
-    {
-        isPlaying = false;
-        if (color != myColor)
-        {
-            // peer disconnected
-            peer->deleteLater();
-            peer = nullptr;
-            emit message(obj);
-        }
-        else
-        {
-            // ???
-        }
-    }
-    else if (type == "error")
-    {
-        isPlaying = false;
-        if (color != myColor)
-        {
-            // peer error
-            peer->deleteLater();
-            peer = nullptr;
-            emit message(obj);
-        }
-        else
-        {
-            // self error ???
+            broadcastWin(win);
         }
     }
     else if (type == "new")
@@ -173,18 +201,21 @@ void ChessServer::startGame()
     // "hello"s
     QJsonObject obj;
     obj["type"] = "hello";
-    sendBoth(obj);
+    broadcast(obj);
 
     // setup
     board = Engine::generate(15, 15);
     myColor = Engine::randomColor();
+    sessions[peer].color = Engine::nextColor(myColor);
+    // TODO: multi-color support
 
     // black first
     turn = CH_BLACK;
     isPlaying = true;
+    lastRow = lastCol = -1;
 
     sendColors();
-    sendBoardBoth();
+    broadcastBoard();
 }
 
 void ChessServer::close()
@@ -212,7 +243,7 @@ void ChessServer::close()
     }
 }
 
-void ChessServer::sendBoardBoth(int lastRow, int lastCol, bool inc)
+void ChessServer::broadcastBoard(bool inc)
 {
     QJsonObject obj;
     obj["type"] = "update";
@@ -225,15 +256,28 @@ void ChessServer::sendBoardBoth(int lastRow, int lastCol, bool inc)
         data["board"] = Engine::toJson(board);
     }
     obj["data"] = data;
-    sendBoth(obj);
+    broadcast(obj);
 }
 
-void ChessServer::sendWin(chess_t win)
+void ChessServer::sendBoard(JsonSession *sess)
+{
+    QJsonObject obj;
+    obj["type"] = "update";
+    QJsonObject data;
+    data["row"] = lastRow;
+    data["col"] = lastCol;
+    data["turn"] = Engine::toJson(turn);
+    data["board"] = Engine::toJson(board);
+    obj["data"] = data;
+    sess->send(obj);
+}
+
+void ChessServer::broadcastWin(chess_t win)
 {
     QJsonObject obj;
     obj["type"] = "win";
     obj["data"] = Engine::toJson(win);
-    sendBoth(obj);
+    broadcast(obj);
 }
 
 void ChessServer::sendColors()
@@ -244,13 +288,19 @@ void ChessServer::sendColors()
     emit message(obj);
 
     // TODO: multi-color support
-    obj["data"] = Engine::toJson(Engine::nextColor(myColor));
+    obj["data"] = Engine::toJson(sessions[peer].color);
     peer->send(obj);
 }
 
-void ChessServer::sendBoth(const QJsonObject &obj)
+void ChessServer::broadcast(const QJsonObject &obj)
 {
-    peer->send(obj);
+    for (JsonSession *sess : sessions.keys())
+    {
+        if (sessions[sess].joined)
+        {
+            sess->send(obj);
+        }
+    }
     emit message(obj);
 }
 
@@ -293,8 +343,9 @@ void ChessServer::onHttpRequest(JsonSession *sess, QString header)
 {
     if (sess == peer)
     {
-        // return;
+        // ???
     }
+    sessions[sess].isHttp = true;
     QStringList headers = header.split("\r\n", QString::SkipEmptyParts);
     if (headers.count() < 1)
     {
@@ -305,13 +356,7 @@ void ChessServer::onHttpRequest(JsonSession *sess, QString header)
     QStringList methodAndPathAndVersion = headers.first().split(" ");
     if (methodAndPathAndVersion.count() != 3)
     {
-        QByteArray data = QString("<h1>Bad Request</h1>").toUtf8();
-        sess->sendHttpResponse(400, "Bad Request");
-        sess->sendHttpResponse("Server", "GMKU/0.1");
-        sess->sendHttpResponse("Content-Length", QString::number(data.count()));
-        sess->sendHttpResponse("Connection", "Close");
-        sess->sendHttpResponse();
-        sess->sock->write(data);
+        sess->sendHttpResponse(400, "Bad Request", QString("<h1>Bad Request</h1>").toUtf8());
         removeSession(sess, true);
         return;
     }
@@ -322,12 +367,40 @@ void ChessServer::onHttpRequest(JsonSession *sess, QString header)
 
     qDebug() << method << path << version;
 
-    QByteArray data = QString("<h1>It works!</h1>").toUtf8();
-    sess->sendHttpResponse(200, "OK");
-    sess->sendHttpResponse("Server", "GMKU/0.1");
-    sess->sendHttpResponse("Content-Length", QString::number(data.count()));
-    sess->sendHttpResponse("Connection", "Keep-Alive");
-    sess->sendHttpResponse();
-    sess->sock->write(data);
-    // removeSession(sess, true);
+    if (path == "/")
+    {
+        path = "/index.html";
+    }
+
+    if (path == "/board")
+    {
+        QJsonObject data;
+        data["row"] = lastRow;
+        data["col"] = lastCol;
+        data["turn"] = Engine::toJson(turn);
+        data["board"] = Engine::toJson(board);
+        QByteArray buff = QJsonDocument(data).toJson(QJsonDocument::Compact);
+        sess->sendHttpResponse(200, "OK", buff);
+    }
+    else
+    {
+        QVector<QString> innerFiles = { "/index.html" };
+        if (innerFiles.indexOf(path) != -1)
+        {
+            QFile f(QString(":/webserver%1").arg(path));
+            f.open(QFile::ReadOnly);
+            QByteArray data = f.readAll();
+            f.close();
+            sess->sendHttpResponse(200, "OK", data);
+        }
+        else
+        {
+            sess->sendHttpResponse(404, "Not Found", QString("<h1>404 not found</h1>").toUtf8());
+        }
+    }
+
+    if (version != "HTTP/1.1")
+    {
+        removeSession(sess, true);
+    }
 }

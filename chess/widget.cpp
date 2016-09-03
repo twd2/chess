@@ -75,7 +75,7 @@ void Widget::onMessage(QJsonObject obj)
     {
         // connected
         QJsonObject obj;
-        obj["type"] = "hello";
+        obj["type"] = "join";
         sendToServer(obj);
         if (client)
         {
@@ -132,17 +132,28 @@ void Widget::onMessage(QJsonObject obj)
     else if (type == "win")
     {
         char win = obj["data"].toString()[0].toLatin1();
+
         if (win == '-')
         {
             setMessage(true, tr("Draw O.O"));
         }
-        else if (win == myColor)
-        {
-            setMessage(true, tr("You WIN :)"));
-        }
         else
         {
-            setMessage(true, tr("You lose :("));
+            if (myColor != CH_VIEWER)
+            {
+                if (win == myColor)
+                {
+                    setMessage(true, tr("You WIN :)"));
+                }
+                else
+                {
+                    setMessage(true, tr("You lose :("));
+                }
+            }
+            else
+            {
+                setMessage(true, tr("%1 WIN").arg(Engine::name(win)));
+            }
         }
     }
     else if (type == "close")

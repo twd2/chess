@@ -18,7 +18,7 @@ class ChessServer
 {
     Q_OBJECT
 public:
-    static constexpr int timeoutInterval = 2000;//45000;
+    static constexpr int timeoutInterval = 45000;
     std::function<bool (QHostAddress, quint16)> grantFunc;
     QTcpServer *listener = nullptr;
     ChessServer(QHostAddress, quint16, QObject *parent = nullptr);
@@ -43,6 +43,7 @@ private:
     chess_t turn = CH_BLACK;
     bool isPlaying = false;
     board_t board;
+    int lastRow = -1, lastCol = -1;
     QHostAddress address;
     quint16 port;
     JsonSession *peer = nullptr;
@@ -51,10 +52,11 @@ private:
 
     void startGame();
     bool place(chess_t color, int row, int col);
-    void sendWin(chess_t);
+    void broadcastWin(chess_t);
     void sendColors();
-    void sendBoardBoth(int lastRow = -1, int lastCol = -1, bool inc = false);
-    void sendBoth(const QJsonObject &);
+    void sendBoard(JsonSession *sess);
+    void broadcastBoard(bool inc = false);
+    void broadcast(const QJsonObject &);
 };
 
 #endif // CHESSSERVER_H
