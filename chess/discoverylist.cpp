@@ -2,7 +2,7 @@
 #include "ui_discoverylist.h"
 
 DiscoveryList::DiscoveryList(ServerDiscovery *discovery, QWidget *parent)
-    : discovery(discovery), QDialog(parent),
+    : QDialog(parent), discovery(discovery),
     ui(new Ui::DiscoveryList)
 {
     ui->setupUi(this);

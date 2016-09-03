@@ -25,8 +25,8 @@ JsonSession::JsonSession(QTcpSocket *sock, QObject *parent)
     // echo test: connect(this, SIGNAL(onMessage(QJsonObject)), this, SLOT(send(QJsonObject)));
 }
 
-template <typename T>
-constexpr inline T min(const T &a, const T &b)
+template <typename T, typename U>
+constexpr inline auto min(const T &a, const U &b) -> decltype(a + b)
 {
     return a < b ? a : b;
 }
