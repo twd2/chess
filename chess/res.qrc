@@ -7,4 +7,7 @@
     <qresource prefix="/locale">
         <file>zh_CN.qm</file>
     </qresource>
+    <qresource prefix="/webserver">
+        <file alias="index.html">webserver/index.html</file>
+    </qresource>
 </RCC>

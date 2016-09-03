@@ -32,7 +32,7 @@ class JsonSession : public QObject
     };
 
 public:
-    static constexpr int heartbeatInterval = 1000;//40000;
+    static constexpr int heartbeatInterval = 40000;
     static constexpr size_t maxLength = 10240;
     static constexpr size_t bufferSize = 4096;
     QTcpSocket *sock;
@@ -55,9 +55,10 @@ public slots:
     void send(const QJsonObject &);
     void send();
     void updateActive();
-    void sendHttpResponse(int code, QString desc);
-    void sendHttpResponse(QString header, QString value);
+    void sendHttpResponse(int code, const QString &desc);
+    void sendHttpResponse(const QString &header, const QString &value);
     void sendHttpResponse();
+    void sendHttpResponse(int code, const QString &desc, const QByteArray &data);
     void startHeartbeat(int interval = heartbeatInterval);
     void stopHeartbeat();
 private:

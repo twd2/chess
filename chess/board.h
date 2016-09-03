@@ -23,7 +23,7 @@ protected:
     QString lockText = "";
     int lastRow = -1, lastCol = -1;
     int _rev = 0;
-    bool _hint = true;
+    bool _hint = false;
 public:
     chess_t myColor = CH_WHITE;
     explicit Board(QWidget *parent = 0);

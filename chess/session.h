@@ -9,6 +9,7 @@ public:
     bool authorized = false;
     bool isPeer = false;
     bool isHttp = false;
+    bool joined = false;
     chess_t color = CH_VIEWER;
     Session();
 };
