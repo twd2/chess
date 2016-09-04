@@ -321,12 +321,19 @@ void JsonSession::sendHttpResponse()
     sock->write(buffer);
 }
 
-void JsonSession::sendHttpResponse(int code, const QString &desc, const QByteArray &data)
+void JsonSession::sendHttpResponse(int code, const QString &desc, const QByteArray &data, bool keepAlive)
 {
     sendHttpResponse(code, desc);
     sendHttpResponse("Server", "GMKU/0.1");
     sendHttpResponse("Content-Length", QString::number(data.count()));
-    sendHttpResponse("Connection", "Keep-Alive");
+    if (keepAlive)
+    {
+        sendHttpResponse("Connection", "Keep-Alive");
+    }
+    else
+    {
+        sendHttpResponse("Connection", "close");
+    }
     sendHttpResponse();
     sock->write(data);
 }

@@ -58,7 +58,7 @@ public slots:
     void sendHttpResponse(int code, const QString &desc);
     void sendHttpResponse(const QString &header, const QString &value);
     void sendHttpResponse();
-    void sendHttpResponse(int code, const QString &desc, const QByteArray &data);
+    void sendHttpResponse(int code, const QString &desc, const QByteArray &data, bool keepAlive = true);
     void startHeartbeat(int interval = heartbeatInterval);
     void stopHeartbeat();
 private:

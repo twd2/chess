@@ -356,7 +356,7 @@ void ChessServer::onHttpRequest(JsonSession *sess, QString header)
     QStringList methodAndPathAndVersion = headers.first().split(" ");
     if (methodAndPathAndVersion.count() != 3)
     {
-        sess->sendHttpResponse(400, "Bad Request", QString("<h1>Bad Request</h1>").toUtf8());
+        sess->sendHttpResponse(400, "Bad Request", QString("<h1>Bad Request</h1>").toUtf8(), false);
         removeSession(sess, true);
         return;
     }
@@ -366,6 +366,12 @@ void ChessServer::onHttpRequest(JsonSession *sess, QString header)
             version = methodAndPathAndVersion[2];
 
     qDebug() << method << path << version;
+
+    bool keepAlive = true;
+    if (version != "HTTP/1.1")
+    {
+        keepAlive = false;
+    }
 
     if (path == "/")
     {
@@ -380,7 +386,7 @@ void ChessServer::onHttpRequest(JsonSession *sess, QString header)
         data["turn"] = Engine::toJson(turn);
         data["board"] = Engine::toJson(board);
         QByteArray buff = QJsonDocument(data).toJson(QJsonDocument::Compact);
-        sess->sendHttpResponse(200, "OK", buff);
+        sess->sendHttpResponse(200, "OK", buff, keepAlive);
     }
     else
     {
@@ -391,15 +397,15 @@ void ChessServer::onHttpRequest(JsonSession *sess, QString header)
             f.open(QFile::ReadOnly);
             QByteArray data = f.readAll();
             f.close();
-            sess->sendHttpResponse(200, "OK", data);
+            sess->sendHttpResponse(200, "OK", data, keepAlive);
         }
         else
         {
-            sess->sendHttpResponse(404, "Not Found", QString("<h1>404 not found</h1>").toUtf8());
+            sess->sendHttpResponse(404, "Not Found", QString("<h1>404 not found</h1>").toUtf8(), keepAlive);
         }
     }
 
-    if (version != "HTTP/1.1")
+    if (!keepAlive)
     {
         removeSession(sess, true);
     }
