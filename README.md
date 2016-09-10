@@ -1,5 +1,5 @@
 # chess
-Qt Huge Project
+Qt Socket Huge Project
 
 Network Gomoku.
 
